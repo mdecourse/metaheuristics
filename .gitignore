@@ -102,3 +102,7 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+#Cython .c files
+src/*.c
+src/*.cpp
