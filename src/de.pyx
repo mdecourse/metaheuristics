@@ -347,7 +347,7 @@ cdef class DiffertialEvolution:
             self.generation_process()
             #progress
             if self.progress_fun is not None:
-                self.progress_fun(self.gen, "{:.04f}".format(self.lastgenbest.f))
+                self.progress_fun(self.gen, f"{self.lastgenbest.f:.04f}")
             #interrupt
             if self.interrupt_fun is not None:
                 if self.interrupt_fun():
