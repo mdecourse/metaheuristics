@@ -80,7 +80,7 @@ cdef class DiffertialEvolution:
         self.lb = np.array(self.func.get_lower())
         # up bound
         self.ub = np.array(self.func.get_upper())
-        #Algorithm will stop when the limitation has happend.
+        # Algorithm will stop when the limitation has happend.
         self.maxGen = 0
         self.minFit = 0
         self.maxTime = 0
@@ -95,7 +95,7 @@ cdef class DiffertialEvolution:
             self.maxTime = settings['maxTime']
         else:
             raise Exception("Please give 'maxGen', 'minFit' or 'maxTime' limit.")
-        #Report function
+        # Report function
         self.rpt = settings['report']
         self.progress_fun = progress_fun
         self.interrupt_fun = interrupt_fun
@@ -345,10 +345,10 @@ cdef class DiffertialEvolution:
                 if (self.maxTime > 0) and (time() - self.timeS >= self.maxTime):
                     break
             self.generation_process()
-            #progress
+            # progress
             if self.progress_fun is not None:
                 self.progress_fun(self.gen, f"{self.lastgenbest.f:.04f}")
-            #interrupt
+            # interrupt
             if self.interrupt_fun is not None:
                 if self.interrupt_fun():
                     break

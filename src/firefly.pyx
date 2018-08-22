@@ -88,7 +88,7 @@ cdef class Firefly:
         self.fireflys = np.ndarray((self.n,), dtype=np.object)
         for i in range(self.n):
             self.fireflys[i] = Chromosome(self.D)
-        #Algorithm will stop when the limitation has happend.
+        # Algorithm will stop when the limitation has happend.
         self.maxGen = 0
         self.minFit = 0
         self.maxTime = 0
@@ -103,7 +103,7 @@ cdef class Firefly:
             self.maxTime = settings['maxTime']
         else:
             raise Exception("Please give 'maxGen', 'minFit' or 'maxTime' limit.")
-        #Report function
+        # Report function
         self.rpt = settings['report']
         self.progress_fun = progress_fun
         self.interrupt_fun = interrupt_fun
@@ -218,10 +218,10 @@ cdef class Firefly:
                 if (self.maxTime > 0) and (time() - self.timeS >= self.maxTime):
                     break
             self.generation_process()
-            #progress
+            # progress
             if self.progress_fun is not None:
                 self.progress_fun(self.gen, f"{self.bestFirefly.f:.04f}")
-            #interrupt
+            # interrupt
             if self.interrupt_fun is not None:
                 if self.interrupt_fun():
                     break

@@ -15,11 +15,11 @@ for source in os.listdir("./src"):
         sources.append(source)
 
 extra_compile_args = [
-    #Compiler optimize.
+    # Compiler optimize.
     '-O3',
-    #Disable NumPy warning only on Linux.
+    # Disable NumPy warning only on Linux.
     '-Wno-cpp',
-    #Windows format warning.
+    # Windows format warning.
     '-Wno-format',
 ]
 
@@ -29,12 +29,12 @@ def basename(name: str) -> str:
     return name.split('.')[0]
 
 
-#Original src
+# Original src
 ext_modules = []
 for source in sources:
     ext_modules.append(Extension(
         basename(source),
-        sources = ['src/' + source], #path + file name
+        sources = ['src/' + source], # path + file name
         
         include_dirs = [numpy.get_include()],
         extra_compile_args = extra_compile_args,

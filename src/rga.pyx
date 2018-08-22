@@ -247,10 +247,10 @@ cdef class Genetic:
                 if (self.maxTime > 0) and (time() - self.timeS >= self.maxTime):
                     break
             self.generation_process()
-            #progress
+            # progress
             if self.progress_fun is not None:
                 self.progress_fun(self.gen, f"{self.chromElite.f:.04f}")
-            #interrupt
+            # interrupt
             if self.interrupt_fun is not None:
                 if self.interrupt_fun():
                     break
