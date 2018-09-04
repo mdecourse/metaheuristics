@@ -45,7 +45,8 @@ cdef class DiffertialEvolution:
     cdef Chromosome lastgenbest, currentbest
     cdef list fitnessTime
     
-    def __cinit__(self,
+    def __cinit__(
+        self,
         func: Verification,
         settings: dict,
         progress_fun: object = None,
