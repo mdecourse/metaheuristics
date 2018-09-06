@@ -21,8 +21,8 @@ cdef class Chromosome:
     cdef public double f
     cdef public np.ndarray v
     
-    cdef double distance(self, Chromosome)
-    cpdef void assign(self, Chromosome)
+    cdef double distance(self, Chromosome obj)
+    cpdef void assign(self, Chromosome obj)
 
 
 cdef class Verification:
