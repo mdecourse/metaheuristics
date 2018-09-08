@@ -43,13 +43,26 @@ cdef class Verification:
     """Verification function class base."""
     
     cdef np.ndarray get_upper(self):
-        return np.array([])
+        """Return upper bound."""
+        raise NotImplementedError
     
     cdef np.ndarray get_lower(self):
-        return np.array([])
+        """Return lower bound."""
+        raise NotImplementedError
     
     cdef int get_nParm(self):
-        return 0
+        """How many parameters do we need."""
+        raise NotImplementedError
     
-    cpdef dict get_coordinates(self, np.ndarray v):
-        return {}
+    def __call__(self, v: np.ndarray) -> double:
+        """Calculate the fitness.
+        
+        Usage:
+        f = MyVerification()
+        fitness = f(chromosome.v)
+        """
+        raise NotImplementedError
+    
+    cpdef object result(self, np.ndarray v):
+        """Show the result."""
+        raise NotImplementedError

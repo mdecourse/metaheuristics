@@ -227,4 +227,4 @@ cdef class Firefly:
                 if self.interrupt_fun():
                     break
         self.report()
-        return self.func.get_coordinates(self.bestFirefly.v), self.fitnessTime
+        return self.func.result(self.bestFirefly.v), self.fitnessTime

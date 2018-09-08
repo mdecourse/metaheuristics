@@ -29,4 +29,4 @@ cdef class Verification:
     cdef np.ndarray get_upper(self)
     cdef np.ndarray get_lower(self)
     cdef int get_nParm(self)
-    cpdef dict get_coordinates(self, np.ndarray v)
+    cpdef object result(self, np.ndarray v)

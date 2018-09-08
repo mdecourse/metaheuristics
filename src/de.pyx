@@ -125,13 +125,11 @@ cdef class DiffertialEvolution:
         self.fitnessTime = []
     
     cdef inline void checkParameter(self):
-        """
-        check parameter is set properly
-        """
+        """Check parameter is set properly."""
         if (type(self.D) is not int) and self.D <= 0:
-            raise Exception('D shoud be integer and larger than 0')
+            raise Exception('D should be integer and larger than 0')
         if (type(self.NP) is not int) and self.NP <= 0:
-            raise Exception('NP shoud be integer and larger than 0')
+            raise Exception('NP should be integer and larger than 0')
         if self.CR < 0 or self.CR > 1:
             raise Exception('CR should be [0,1]')
         if self.strategy < 1 or self.strategy > 10:
@@ -141,9 +139,7 @@ cdef class DiffertialEvolution:
                 raise Exception('upper bound should be larger than lower bound')
     
     cdef inline void init(self):
-        """
-        init population
-        """
+        """Initial population."""
         cdef int i, j
         for i in range(self.NP):
             for j in range(self.D):
@@ -151,30 +147,24 @@ cdef class DiffertialEvolution:
             self.pop[i].f = self.evalute(self.pop[i])
     
     cdef inline double evalute(self, Chromosome member):
-        """
-        evalute the member in enviorment
-        """
+        """Evalute the member in environment."""
         return self.func(member.v)
     
     cdef inline Chromosome findBest(self):
-        """
-        find member that have minimum fitness value from pool
-        """
+        """Find member that have minimum fitness value from pool."""
         cdef int i
         cdef int index = 0
-        cdef Chromosome chrom
+        cdef Chromosome chromosome
         cdef double f = self.pop[0].f
         for i in range(len(self.pop)):
-            chrom = self.pop[i]
-            if chrom.f < f:
+            chromosome = self.pop[i]
+            if chromosome.f < f:
                 index = i
-                f = chrom.f
+                f = chromosome.f
         return self.pop[index]
     
     cdef inline void generateRandomVector(self, int i):
-        """
-        generate new vector
-        """
+        """Generate new vector."""
         while True:
             self.r1 = int(randV() * self.NP)
             if self.r1 != i:
@@ -197,71 +187,69 @@ cdef class DiffertialEvolution:
                 break
     
     cdef inline Chromosome recombination(self, int i):
-        """
-        use new vector, recombination the new one member to tmp
-        """
+        """use new vector, recombination the new one member to tmp."""
         cdef Chromosome tmp = Chromosome(self.D)
         tmp.assign(self.pop[i])
         cdef int n = int(randV() * self.D)
         cdef int L = 0
-        if self.strategy==1:
+        if self.strategy == 1:
             while True:
                 tmp.v[n] = self.lastgenbest.v[n] + self.F*(self.pop[self.r2].v[n] - self.pop[self.r3].v[n])
                 n = (n + 1) % self.D
                 L += 1
                 if not (randV() < self.CR and L < self.D):
                     break
-        elif self.strategy==2:
+        elif self.strategy == 2:
             while True:
                 tmp.v[n] = self.pop[self.r1].v[n] + self.F*(self.pop[self.r2].v[n] - self.pop[self.r3].v[n])
                 n = (n + 1) % self.D
                 L += 1
                 if not (randV() < self.CR and L < self.D):
                     break
-        elif self.strategy==3:
+        elif self.strategy == 3:
             while True:
                 tmp.v[n] = tmp.v[n] + self.F*(self.lastgenbest.v[n] - tmp.v[n]) + self.F*(self.pop[self.r1].v[n] - self.pop[self.r2].v[n])
                 n = (n + 1) % self.D
                 L += 1
                 if not (randV() < self.CR and L < self.D):
                     break
-        elif self.strategy==4:
+        elif self.strategy == 4:
             while True:
                 tmp.v[n] = self.lastgenbest.v[n] + (self.pop[self.r1].v[n] + self.pop[self.r2].v[n] - self.pop[self.r3].v[n] - self.pop[self.r4].v[n]) * self.F
                 n = (n + 1) % self.D
                 L += 1
                 if not (randV() < self.CR and L < self.D):
                     break
-        elif self.strategy==5:
+        elif self.strategy == 5:
             while True:
                 tmp.v[n] = self.pop[self.r5].v[n] + (self.pop[self.r1].v[n] + self.pop[self.r2].v[n] - self.pop[self.r3].v[n] - self.pop[self.r4].v[n]) * self.F
                 n = (n + 1) % self.D
                 L += 1
                 if not (randV() < self.CR and L < self.D):
                     break
-        elif self.strategy==6:
+        elif self.strategy == 6:
             for L in range(self.D):
-                if (randV() < self.CR or L == self.D-1):
+                if (randV() < self.CR) or (L == self.D - 1):
                     tmp.v[n] = self.lastgenbest.v[n] + self.F*(self.pop[self.r2].v[n] - self.pop[self.r3].v[n])
                 n = (n + 1) % self.D
-        elif self.strategy==7:
+        elif self.strategy == 7:
             for L in range(self.D):
-                if ((randV() < self.CR) or L == self.D-1):
+                if (randV() < self.CR) or (L == self.D - 1):
                     tmp.v[n] = self.pop[self.r1].v[n] + self.F*(self.pop[self.r2].v[n] - self.pop[self.r3].v[n])
                 n = (n + 1) % self.D
-        elif self.strategy==8:
+        elif self.strategy == 8:
             for L in range(self.D):
-                if (randV() < self.CR or L == self.D-1):
+                if (randV() < self.CR) or (L == self.D - 1):
                     tmp.v[n] = tmp.v[n] + self.F*(self.lastgenbest.v[n] - tmp.v[n]) + self.F*(self.pop[self.r1].v[n] - self.pop[self.r2].v[n])
                 n = (n + 1) % self.D
-        elif self.strategy==9:
+        elif self.strategy == 9:
             for L in range(self.D):
-                if (randV() < self.CR or L == self.D-1):
+                if (randV() < self.CR) or (L == self.D - 1):
                     tmp.v[n] = self.lastgenbest.v[n] + (self.pop[self.r1].v[n] + self.pop[self.r2].v[n] - self.pop[self.r3].v[n] - self.pop[self.r4].v[n]) * self.F
                 n = (n + 1) % self.D
         else:
             for L in range(self.D):
-                if (randV() < self.CR or L == self.D-1):
+                if (randV() < self.CR) or (L == self.D - 1):
                     tmp.v[n] = self.pop[self.r5].v[n] + (self.pop[self.r1].v[n] + self.pop[self.r2].v[n] - self.pop[self.r3].v[n] - self.pop[self.r4].v[n]) * self.F
                 n = (n + 1) % self.D
         return tmp
@@ -273,10 +261,8 @@ cdef class DiffertialEvolution:
         self.timeE = time()
         self.fitnessTime.append((self.gen, self.lastgenbest.f, self.timeE - self.timeS))
     
-    cdef inline bool overbound(self, Chromosome member):
-        """
-        check the member's chromosome that is out of bound?
-        """
+    cdef inline bool over_bound(self, Chromosome member):
+        """check the member's chromosome that is out of bound?"""
         cdef int i
         for i in range(self.D):
             if member.v[i] > self.ub[i] or member.v[i] < self.lb[i]:
@@ -292,10 +278,10 @@ cdef class DiffertialEvolution:
             # use the vector recombine the member to temporary
             tmp = self.recombination(i)
             # check the one is out of bound?
-            if self.overbound(tmp):
+            if self.over_bound(tmp):
                 # if it is, then abandon it
                 continue
-            # is not out of bound, that mean it's quilify of enviorment
+            # is not out of bound, that mean it's qualify of enviorment
             # then evalute the one
             tmp.f = self.evalute(tmp)
             # if temporary one is better than origin(fitness value is smaller)
@@ -355,4 +341,4 @@ cdef class DiffertialEvolution:
                     break
         # the evolution journey is done, report the final status
         self.report()
-        return self.func.get_coordinates(self.lastgenbest.v), self.fitnessTime
+        return self.func.result(self.lastgenbest.v), self.fitnessTime

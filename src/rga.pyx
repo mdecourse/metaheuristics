@@ -205,10 +205,10 @@ cdef class Genetic:
             if (self.chrom[k].f < self.chrom[j].f) and (randV() < self.pWin):
                 self.newChrom[i].assign(self.chrom[k])
         # in this stage, newChrom is select finish
-        # now replace origin chrom
+        # now replace origin chromosome
         for i in range(self.nPop):
             self.chrom[i].assign(self.newChrom[i])
-        # select random one chrom to be best chrom, make best chrom still exist
+        # select random one chromosome to be best chromosome, make best chromosome still exist
         j = self.random(self.nPop)
         self.chrom[j].assign(self.chromElite)
     
@@ -256,4 +256,4 @@ cdef class Genetic:
                 if self.interrupt_fun():
                     break
         self.report()
-        return self.func.get_coordinates(self.chromElite.v), self.fitnessTime
+        return self.func.result(self.chromElite.v), self.fitnessTime
