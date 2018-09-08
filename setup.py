@@ -24,24 +24,16 @@ extra_compile_args = [
 ]
 
 
-def basename(name: str) -> str:
-    """No suffix name."""
-    return name.split('.')[0]
-
-
 # Original src
 ext_modules = []
 for source in sources:
     ext_modules.append(Extension(
-        basename(source),
-        sources = ['src/' + source], # path + file name
+        source.split('.')[0],
+        sources=['src/' + source],  # path + file name
         
-        include_dirs = [numpy.get_include()],
-        extra_compile_args = extra_compile_args,
+        include_dirs=[numpy.get_include()],
+        extra_compile_args=extra_compile_args,
     ))
 
 
-setup(
-    ext_modules = ext_modules,
-    cmdclass = {'build_ext': build_ext},
-)
+setup(ext_modules=ext_modules, cmdclass={'build_ext': build_ext})
