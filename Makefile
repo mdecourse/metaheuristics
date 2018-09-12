@@ -1,6 +1,13 @@
+# Adesign Makefile
+
+# author: Yuan Chang
+# copyright: Copyright (C) 2016-2018
+# license: AGPL
+# email: pyslvs@gmail.com
+
 all: build
 
-# into package folder
+# Into package folder
 build: src/*.pyx
 ifeq ($(OS),Windows_NT)
 	-rename __init__.py .__init__.py
