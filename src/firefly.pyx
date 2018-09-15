@@ -8,6 +8,7 @@
 # __license__ = "AGPL"
 # __email__ = "pyslvs@gmail.com"
 
+cimport cython
 from libc.math cimport exp, log10
 import numpy as np
 cimport numpy as np
@@ -33,6 +34,7 @@ cdef double randV():
     return rand() / (RAND_MAX * 1.01)
 
 
+@cython.final
 cdef class Firefly:
     
     """Algorithm class."""

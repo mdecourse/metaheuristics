@@ -8,6 +8,7 @@
 # __license__ = "AGPL"
 # __email__ = "pyslvs@gmail.com"
 
+cimport cython
 import numpy as np
 cimport numpy as np
 from verify cimport (
@@ -32,6 +33,7 @@ cdef double randV():
     return rand() / (RAND_MAX * 1.01)
 
 
+@cython.final
 cdef class DiffertialEvolution:
     
     """Algorithm class."""

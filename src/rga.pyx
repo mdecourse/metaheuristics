@@ -8,6 +8,7 @@
 # __license__ = "AGPL"
 # __email__ = "pyslvs@gmail.com"
 
+cimport cython
 from libc.math cimport pow
 import numpy as np
 cimport numpy as np
@@ -19,7 +20,6 @@ from verify cimport (
     Chromosome,
     Verification,
 )
-from cpython cimport bool
 from libc.stdlib cimport (
     rand,
     RAND_MAX,
@@ -33,6 +33,7 @@ cdef double randV():
     return rand() / (RAND_MAX * 1.01)
 
 
+@cython.final
 cdef class Genetic:
     
     """Algorithm class."""

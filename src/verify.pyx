@@ -13,6 +13,7 @@ cimport numpy as np
 cimport cython
 
 
+@cython.final
 @cython.freelist(100)
 cdef class Chromosome:
     
