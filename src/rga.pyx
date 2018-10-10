@@ -35,9 +35,9 @@ cdef double randV():
 
 @cython.final
 cdef class Genetic:
-    
+
     """Algorithm class."""
-    
+
     cdef limit option
     cdef int nParm, nPop, maxGen, maxTime, gen, rpt
     cdef double pCross, pMute, pWin, bDelta, iseed, mask, seed, timeS, timeE, minFit
@@ -47,7 +47,7 @@ cdef class Genetic:
     cdef Chromosome chromElite, chromBest
     cdef np.ndarray maxLimit, minLimit
     cdef list fitnessTime
-    
+
     def __cinit__(
         self,
         func: Verification,
@@ -99,7 +99,7 @@ cdef class Genetic:
         self.babyChrom = np.ndarray((3,), dtype=np.object)
         for i in range(3):
             self.babyChrom[i] = Chromosome(self.nParm)
-        
+
         self.chromElite = Chromosome(self.nParm)
         self.chromBest = Chromosome(self.nParm)
         # low bound
@@ -108,18 +108,18 @@ cdef class Genetic:
         self.maxLimit = self.func.get_upper()
         # maxgen and gen
         self.gen = 0
-        
+
         # setup benchmark
         self.timeS = time()
         self.timeE = 0
         self.fitnessTime = []
-    
+
     cdef inline int random(self, int k):
         return int(randV()*k)
-    
+
     cdef inline double randVal(self, double low, double high):
         return randV()*(high-low)+low
-    
+
     cdef inline double check(self, int i, double v):
         """
         If a variable is out of bound,
@@ -128,7 +128,7 @@ cdef class Genetic:
         if (v > self.maxLimit[i]) or (v < self.minLimit[i]):
             return self.randVal(self.minLimit[i], self.maxLimit[i])
         return v
-    
+
     cdef inline void crossOver(self):
         cdef int i, s, j
         for i in range(0, self.nPop-1, 2):
@@ -154,7 +154,7 @@ cdef class Genetic:
                 # replace first two baby to parent, another one will be
                 self.chrom[i].assign(self.babyChrom[0])
                 self.chrom[i+1].assign(self.babyChrom[1])
-    
+
     cdef inline double delta(self, double y):
         cdef double r
         if self.maxGen > 0:
@@ -162,7 +162,7 @@ cdef class Genetic:
         else:
             r = 1
         return y*randV()*pow(1.0 - r, self.bDelta)
-    
+
     cdef inline void fitness(self):
         cdef int j
         for j in range(self.nPop):
@@ -173,27 +173,27 @@ cdef class Genetic:
                 self.chromBest.assign(self.chrom[j])
         if (self.chromBest.f < self.chromElite.f):
             self.chromElite.assign(self.chromBest)
-    
+
     cdef inline void initialPop(self):
         cdef int i, j
         for j in range(self.nPop):
             for i in range(self.nParm):
                 self.chrom[j].v[i] = self.randVal(self.minLimit[i], self.maxLimit[i])
-    
+
     cdef inline void mutate(self):
         cdef int i, s
         for i in range(self.nPop):
             if randV() < self.pMute:
                 s = self.random(self.nParm)
-                if (self.random(2) == 0):
+                if self.random(2) == 0:
                     self.chrom[i].v[s] += self.delta(self.maxLimit[s]-self.chrom[i].v[s])
                 else:
                     self.chrom[i].v[s] -= self.delta(self.chrom[i].v[s]-self.minLimit[s])
-    
+
     cdef inline void report(self):
         self.timeE = time()
         self.fitnessTime.append((self.gen, self.chromElite.f, self.timeE - self.timeS))
-    
+
     cdef inline void select(self):
         """
         roulette wheel selection
@@ -212,7 +212,7 @@ cdef class Genetic:
         # select random one chromosome to be best chromosome, make best chromosome still exist
         j = self.random(self.nPop)
         self.chrom[j].assign(self.chromElite)
-    
+
     cdef inline void generation_process(self):
         self.select()
         self.crossOver()
@@ -224,7 +224,7 @@ cdef class Genetic:
         else:
             if self.gen % 10 == 0:
                 self.report()
-    
+
     cpdef tuple run(self):
         """
         // **** Init and run GA for maxGen times
