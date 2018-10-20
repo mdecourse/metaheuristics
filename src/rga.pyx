@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 # cython: language_level=3
 
-"""Real-coded Genetic Algorithm."""
+"""Real-coded Genetic Algorithm.
 
-# __author__ = "Yuan Chang"
-# __copyright__ = "Copyright (C) 2016-2018"
-# __license__ = "AGPL"
-# __email__ = "pyslvs@gmail.com"
+__author__ = "Yuan Chang"
+__copyright__ = "Copyright (C) 2016-2018"
+__license__ = "AGPL"
+__email__ = "pyslvs@gmail.com"
+"""
 
 cimport cython
 from libc.math cimport pow

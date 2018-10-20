@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 # cython: language_level=3
 
-"""The callable class of the validation in algorithm."""
+"""The callable class of the validation in algorithm.
 
-# __author__ = "Yuan Chang"
-# __copyright__ = "Copyright (C) 2016-2018"
-# __license__ = "AGPL"
-# __email__ = "pyslvs@gmail.com"
+__author__ = "Yuan Chang"
+__copyright__ = "Copyright (C) 2016-2018"
+__license__ = "AGPL"
+__email__ = "pyslvs@gmail.com"
+"""
 
 import numpy as np
 cimport numpy as np
@@ -20,7 +21,7 @@ cdef class Chromosome:
     cdef public int n
     cdef public double f
     cdef public np.ndarray v
-    
+
     cdef double distance(self, Chromosome obj)
     cpdef void assign(self, Chromosome obj)
 

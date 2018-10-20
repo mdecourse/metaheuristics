@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 # cython: language_level=3
 
-"""Differential Evolution."""
+"""Differential Evolution.
 
-# __author__ = "Yuan Chang"
-# __copyright__ = "Copyright (C) 2016-2018"
-# __license__ = "AGPL"
-# __email__ = "pyslvs@gmail.com"
+__author__ = "Yuan Chang"
+__copyright__ = "Copyright (C) 2016-2018"
+__license__ = "AGPL"
+__email__ = "pyslvs@gmail.com"
+"""
 
 cimport cython
 import numpy as np

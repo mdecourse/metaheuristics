@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 # cython: language_level=3
 
-"""Firefly Algorithm."""
+"""Firefly Algorithm.
 
-# __author__ = "Yuan Chang"
-# __copyright__ = "Copyright (C) 2016-2018"
-# __license__ = "AGPL"
-# __email__ = "pyslvs@gmail.com"
+__author__ = "Yuan Chang"
+__copyright__ = "Copyright (C) 2016-2018"
+__license__ = "AGPL"
+__email__ = "pyslvs@gmail.com"
+"""
 
 cimport cython
 from libc.math cimport exp, log10
@@ -36,9 +37,9 @@ cdef double randV():
 
 @cython.final
 cdef class Firefly:
-    
+
     """Algorithm class."""
-    
+
     cdef limit option
     cdef int D, n, maxGen, maxTime, rpt, gen
     cdef double alpha, alpha0, betaMin, beta0, gamma, timeS, timeE, minFit
@@ -48,7 +49,7 @@ cdef class Firefly:
     cdef np.ndarray fireflys
     cdef Chromosome genbest, bestFirefly
     cdef list fitnessTime
-    
+
     def __cinit__(
         self,
         func: Verification,
@@ -116,19 +117,19 @@ cdef class Firefly:
         self.genbest = Chromosome(self.D)
         # best firefly so far
         self.bestFirefly = Chromosome(self.D)
-        
+
         # setup benchmark
         self.timeS = time()
         self.timeE = 0
         self.fitnessTime = []
-    
+
     cdef inline void init(self):
         cdef int i, j
         for i in range(self.n):
             # init the Chromosome
             for j in range(self.D):
                 self.fireflys[i].v[j] = randV()*(self.ub[j] - self.lb[j]) + self.lb[j];
-    
+
     cdef inline void movefireflies(self):
         cdef int i, j, k
         cdef bool is_move
@@ -141,12 +142,12 @@ cdef class Firefly:
                     scale = self.ub[k] - self.lb[k]
                     self.fireflys[i].v[k] += self.alpha * (randV() - 0.5) * scale
                     self.fireflys[i].v[k] = self.check(k, self.fireflys[i].v[k])
-    
+
     cdef inline void evaluate(self):
         cdef Chromosome firefly
         for firefly in self.fireflys:
             firefly.f = self.func(firefly.v)
-    
+
     cdef inline bool movefly(self, Chromosome me, Chromosome she):
         if me.f <= she.f:
             return False
@@ -158,7 +159,7 @@ cdef class Firefly:
             me.v[i] += beta * (she.v[i] - me.v[i]) + self.alpha*(randV()-0.5) * scale
             me.v[i] = self.check(i, me.v[i])
         return True
-    
+
     cdef inline double check(self, int i, double v):
         if v > self.ub[i]:
             return self.ub[i]
@@ -166,7 +167,7 @@ cdef class Firefly:
             return self.lb[i]
         else:
             return v
-    
+
     cdef inline Chromosome findFirefly(self):
         cdef int i
         cdef int index = 0
@@ -178,14 +179,14 @@ cdef class Firefly:
                 index = i
                 f = chrom.f
         return self.fireflys[index]
-    
+
     cdef inline void report(self):
         self.timeE = time()
         self.fitnessTime.append((self.gen, self.bestFirefly.f, self.timeE - self.timeS))
-    
+
     cdef inline void calculate_new_alpha(self):
         self.alpha = self.alpha0 * log10(self.genbest.f + 1)
-    
+
     cdef inline void generation_process(self):
         self.movefireflies()
         self.evaluate()
@@ -203,7 +204,7 @@ cdef class Firefly:
         else:
             if self.gen % 10 == 0:
                 self.report()
-    
+
     cpdef tuple run(self):
         self.init()
         self.evaluate()
