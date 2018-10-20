@@ -89,10 +89,10 @@ cdef class Firefly:
         # up bound
         self.ub = np.array(self.func.get_upper())
         # all fireflies, depend on population n
-        self.fireflys = np.ndarray((self.n,), dtype=np.object)
+        self.fireflys = np.ndarray(self.n, dtype=np.object)
         for i in range(self.n):
             self.fireflys[i] = Chromosome(self.D)
-        # Algorithm will stop when the limitation has happend.
+        # Algorithm will stop when the limitation has happened.
         self.maxGen = 0
         self.minFit = 0
         self.maxTime = 0

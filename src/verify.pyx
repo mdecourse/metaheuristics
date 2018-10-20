@@ -44,11 +44,11 @@ cdef class Verification:
 
     """Verification function class base."""
 
-    cdef np.ndarray get_upper(self):
+    cdef np.ndarray[double, ndim=1] get_upper(self):
         """Return upper bound."""
         raise NotImplementedError
 
-    cdef np.ndarray get_lower(self):
+    cdef np.ndarray[double, ndim=1] get_lower(self):
         """Return lower bound."""
         raise NotImplementedError
 
@@ -65,6 +65,6 @@ cdef class Verification:
         """
         raise NotImplementedError
 
-    cpdef object result(self, np.ndarray v):
+    cpdef object result(self, np.ndarray[double, ndim=1] v):
         """Show the result."""
         raise NotImplementedError

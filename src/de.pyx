@@ -106,7 +106,7 @@ cdef class Differential:
         # check parameter is set properly
         self.checkParameter()
         # generation pool, depend on population size
-        self.pop = np.ndarray((self.NP,), dtype=np.object)
+        self.pop = np.ndarray(self.NP, dtype=np.object)
         for i in range(self.NP):
             self.pop[i] = Chromosome(self.D)
         # last generation best member

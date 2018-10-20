@@ -91,13 +91,13 @@ cdef class Genetic:
         self.rpt = settings['report']
         self.progress_fun = progress_fun
         self.interrupt_fun = interrupt_fun
-        self.chrom = np.ndarray((self.nPop,), dtype=np.object)
+        self.chrom = np.ndarray(self.nPop, dtype=np.object)
         for i in range(self.nPop):
             self.chrom[i] = Chromosome(self.nParm)
-        self.newChrom = np.ndarray((self.nPop,), dtype=np.object)
+        self.newChrom = np.ndarray(self.nPop, dtype=np.object)
         for i in range(self.nPop):
             self.newChrom[i] = Chromosome(self.nParm)
-        self.babyChrom = np.ndarray((3,), dtype=np.object)
+        self.babyChrom = np.ndarray(3, dtype=np.object)
         for i in range(3):
             self.babyChrom[i] = Chromosome(self.nParm)
 
