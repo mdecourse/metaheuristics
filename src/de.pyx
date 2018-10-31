@@ -41,7 +41,7 @@ cdef class Differential:
 
     cdef limit option
     cdef int strategy, D, NP, maxGen, maxTime, rpt, gen, r1, r2, r3, r4, r5
-    cdef double F, CR, time_start, time_end, minFit
+    cdef double F, CR, minFit, time_start
     cdef np.ndarray lb, ub, pop
     cdef Verification func
     cdef object progress_fun, interrupt_fun
@@ -130,18 +130,17 @@ cdef class Differential:
 
         # setup benchmark
         self.time_start = time()
-        self.time_end = 0
         self.fitnessTime = []
 
     cdef inline void check_parameter(self):
         """Check parameter is set properly."""
-        if (type(self.D) is not int) and self.D <= 0:
+        if self.D <= 0:
             raise Exception('D should be integer and larger than 0')
-        if (type(self.NP) is not int) and self.NP <= 0:
+        if self.NP <= 0:
             raise Exception('NP should be integer and larger than 0')
-        if self.CR < 0 or self.CR > 1:
+        if not (0 <= self.CR <= 1):
             raise Exception('CR should be [0,1]')
-        if self.strategy < 1 or self.strategy > 10:
+        if self.strategy not in range(1, 11):
             raise Exception('strategy should be [1,10]')
         for lower, upper in zip(self.lb, self.ub):
             if lower > upper:
@@ -196,75 +195,71 @@ cdef class Differential:
         cdef Chromosome tmp = Chromosome(self.D)
         tmp.assign(self.pop[i])
         cdef int n = int(rand_v() * self.D)
-        cdef int L = 0
+        cdef int l_v = 0
         if self.strategy == 1:
             while True:
                 tmp.v[n] = self.lastgenbest.v[n] + self.F * (self.pop[self.r2].v[n] - self.pop[self.r3].v[n])
                 n = (n + 1) % self.D
-                L += 1
-                if not (rand_v() < self.CR and L < self.D):
+                l_v += 1
+                if not (rand_v() < self.CR and l_v < self.D):
                     break
         elif self.strategy == 2:
             while True:
                 tmp.v[n] = self.pop[self.r1].v[n] + self.F * (self.pop[self.r2].v[n] - self.pop[self.r3].v[n])
                 n = (n + 1) % self.D
-                L += 1
-                if not (rand_v() < self.CR and L < self.D):
+                l_v += 1
+                if not (rand_v() < self.CR and l_v < self.D):
                     break
         elif self.strategy == 3:
             while True:
                 tmp.v[n] = tmp.v[n] + self.F * (self.lastgenbest.v[n] - tmp.v[n]) + self.F*(self.pop[self.r1].v[n] - self.pop[self.r2].v[n])
                 n = (n + 1) % self.D
-                L += 1
-                if not (rand_v() < self.CR and L < self.D):
+                l_v += 1
+                if not (rand_v() < self.CR and l_v < self.D):
                     break
         elif self.strategy == 4:
             while True:
                 tmp.v[n] = self.lastgenbest.v[n] + (self.pop[self.r1].v[n] + self.pop[self.r2].v[n] - self.pop[self.r3].v[n] - self.pop[self.r4].v[n]) * self.F
                 n = (n + 1) % self.D
-                L += 1
-                if not (rand_v() < self.CR and L < self.D):
+                l_v += 1
+                if not (rand_v() < self.CR and l_v < self.D):
                     break
         elif self.strategy == 5:
             while True:
                 tmp.v[n] = self.pop[self.r5].v[n] + (self.pop[self.r1].v[n] + self.pop[self.r2].v[n] - self.pop[self.r3].v[n] - self.pop[self.r4].v[n]) * self.F
                 n = (n + 1) % self.D
-                L += 1
-                if not (rand_v() < self.CR and L < self.D):
+                l_v += 1
+                if not (rand_v() < self.CR and l_v < self.D):
                     break
         elif self.strategy == 6:
-            for L in range(self.D):
-                if (rand_v() < self.CR) or (L == self.D - 1):
+            for l_v in range(self.D):
+                if rand_v() < self.CR or l_v == self.D - 1:
                     tmp.v[n] = self.lastgenbest.v[n] + self.F * (self.pop[self.r2].v[n] - self.pop[self.r3].v[n])
                 n = (n + 1) % self.D
         elif self.strategy == 7:
-            for L in range(self.D):
-                if (rand_v() < self.CR) or (L == self.D - 1):
+            for l_v in range(self.D):
+                if rand_v() < self.CR or l_v == self.D - 1:
                     tmp.v[n] = self.pop[self.r1].v[n] + self.F * (self.pop[self.r2].v[n] - self.pop[self.r3].v[n])
                 n = (n + 1) % self.D
         elif self.strategy == 8:
-            for L in range(self.D):
-                if (rand_v() < self.CR) or (L == self.D - 1):
+            for l_v in range(self.D):
+                if rand_v() < self.CR or l_v == self.D - 1:
                     tmp.v[n] = tmp.v[n] + self.F*(self.lastgenbest.v[n] - tmp.v[n]) + self.F*(self.pop[self.r1].v[n] - self.pop[self.r2].v[n])
                 n = (n + 1) % self.D
         elif self.strategy == 9:
-            for L in range(self.D):
-                if (rand_v() < self.CR) or (L == self.D - 1):
+            for l_v in range(self.D):
+                if rand_v() < self.CR or l_v == self.D - 1:
                     tmp.v[n] = self.lastgenbest.v[n] + (self.pop[self.r1].v[n] + self.pop[self.r2].v[n] - self.pop[self.r3].v[n] - self.pop[self.r4].v[n]) * self.F
                 n = (n + 1) % self.D
         else:
-            for L in range(self.D):
-                if (rand_v() < self.CR) or (L == self.D - 1):
+            for l_v in range(self.D):
+                if rand_v() < self.CR or l_v == self.D - 1:
                     tmp.v[n] = self.pop[self.r5].v[n] + (self.pop[self.r1].v[n] + self.pop[self.r2].v[n] - self.pop[self.r3].v[n] - self.pop[self.r4].v[n]) * self.F
                 n = (n + 1) % self.D
         return tmp
 
     cdef inline void report(self):
-        """
-        report current generation status
-        """
-        self.time_end = time()
-        self.fitnessTime.append((self.gen, self.lastgenbest.f, self.time_end - self.time_start))
+        self.fitnessTime.append((self.gen, self.lastgenbest.f, time() - self.time_start))
 
     cdef inline bool over_bound(self, Chromosome member):
         """check the member's chromosome that is out of bound?"""
@@ -309,9 +304,9 @@ cdef class Differential:
 
     cpdef tuple run(self):
         """Run the algorithm ..."""
-        # initialize the member's chromsome
+        # initialize the member's chromosome
         self.initialize()
-        # find the best one(smallest fitness value)
+        # find the best one (smallest fitness value)
         cdef Chromosome tmp = self.find_best()
         # copy to lastgenbest
         self.lastgenbest.assign(tmp)
@@ -320,26 +315,25 @@ cdef class Differential:
         # report status
         self.report()
         # end initial step
-        # the evolution journey is beggin...
+        # the evolution journey is begin ...
         while True:
             self.gen += 1
             if self.option == maxGen:
-                if (self.maxGen > 0) and (self.gen > self.maxGen):
+                if 0 < self.maxGen < self.gen:
                     break
             elif self.option == minFit:
                 if self.lastgenbest.f <= self.minFit:
                     break
             elif self.option == maxTime:
-                if (self.maxTime > 0) and (time() - self.time_start >= self.maxTime):
+                if 0 < self.maxTime <= time() - self.time_start:
                     break
             self.generation_process()
             # progress
-            if self.progress_fun is not None:
+            if self.progress_fun:
                 self.progress_fun(self.gen, f"{self.lastgenbest.f:.04f}")
             # interrupt
-            if self.interrupt_fun is not None:
-                if self.interrupt_fun():
-                    break
+            if self.interrupt_fun and self.interrupt_fun():
+                break
         # the evolution journey is done, report the final status
         self.report()
         return self.func.result(self.lastgenbest.v), self.fitnessTime

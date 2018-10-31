@@ -21,11 +21,7 @@ from verify cimport (
     Chromosome,
     Verification,
 )
-from libc.stdlib cimport (
-    rand,
-    RAND_MAX,
-    srand,
-)
+from libc.stdlib cimport rand, RAND_MAX, srand
 from time import time
 srand(int(time()))
 
@@ -41,8 +37,7 @@ cdef class Genetic:
 
     cdef limit option
     cdef int nParm, nPop, maxGen, maxTime, gen, rpt
-    cdef double pCross, pMute, pWin, bDelta, iseed, mask, seed, minFit
-    cdef double time_start, time_end
+    cdef double pCross, pMute, pWin, bDelta, iseed, mask, seed, minFit, time_start
     cdef Verification func
     cdef object progress_fun, interrupt_fun
     cdef np.ndarray chrom, newChrom, babyChrom
@@ -117,18 +112,14 @@ cdef class Genetic:
 
         # setup benchmark
         self.time_start = time()
-        self.time_end = 0
         self.fitnessTime = []
-
-    cdef inline int random(self, int k):
-        return int(rand_v() * k)
 
     cdef inline double rand_val(self, double low, double high):
         return rand_v() * (high - low) + low
 
     cdef inline double check(self, int i, double v):
         """If a variable is out of bound, replace it with a random value."""
-        if (v > self.maxLimit[i]) or (v < self.minLimit[i]):
+        if v > self.maxLimit[i] or v < self.minLimit[i]:
             return self.rand_val(self.minLimit[i], self.maxLimit[i])
         return v
 
@@ -186,16 +177,16 @@ cdef class Genetic:
     cdef inline void mutate(self):
         cdef int i, s
         for i in range(self.nPop):
-            if rand_v() < self.pMute:
-                s = self.random(self.nParm)
-                if self.random(2) == 0:
-                    self.chrom[i].v[s] += self.delta(self.maxLimit[s]-self.chrom[i].v[s])
-                else:
-                    self.chrom[i].v[s] -= self.delta(self.chrom[i].v[s]-self.minLimit[s])
+            if not rand_v() < self.pMute:
+                continue
+            s = int(rand_v() * self.nParm)
+            if int(rand_v() * 2) == 0:
+                self.chrom[i].v[s] += self.delta(self.maxLimit[s] - self.chrom[i].v[s])
+            else:
+                self.chrom[i].v[s] -= self.delta(self.chrom[i].v[s] - self.minLimit[s])
 
     cdef inline void report(self):
-        self.time_end = time()
-        self.fitnessTime.append((self.gen, self.chromElite.f, self.time_end - self.time_start))
+        self.fitnessTime.append((self.gen, self.chromElite.f, time() - self.time_start))
 
     cdef inline void select(self):
         """
@@ -203,17 +194,17 @@ cdef class Genetic:
         """
         cdef int i, j, k
         for i in range(self.nPop):
-            j = self.random(self.nPop)
-            k = self.random(self.nPop)
+            j = int(rand_v() * self.nPop)
+            k = int(rand_v() * self.nPop)
             self.newChrom[i].assign(self.chrom[j])
-            if (self.chrom[k].f < self.chrom[j].f) and (rand_v() < self.pWin):
+            if self.chrom[k].f < self.chrom[j].f and rand_v() < self.pWin:
                 self.newChrom[i].assign(self.chrom[k])
         # in this stage, newChrom is select finish
         # now replace origin chromosome
         for i in range(self.nPop):
             self.chrom[i].assign(self.newChrom[i])
         # select random one chromosome to be best chromosome, make best chromosome still exist
-        j = self.random(self.nPop)
+        j = int(rand_v() * self.nPop)
         self.chrom[j].assign(self.chromElite)
 
     cdef inline void generation_process(self):
@@ -229,12 +220,7 @@ cdef class Genetic:
                 self.report()
 
     cpdef tuple run(self):
-        """
-        // **** Init and run GA for maxGen times
-        // **** mxg : maximum generation
-        // **** rp  : report cycle, 0 for final report or
-        // ****       report each mxg modulo rp
-        """
+        """Init and run GA for maxGen times."""
         self.initial_pop()
         self.chrom[0].f = self.func(self.chrom[0].v)
         self.chromElite.assign(self.chrom[0])
@@ -243,21 +229,20 @@ cdef class Genetic:
         while True:
             self.gen += 1
             if self.option == maxGen:
-                if (self.maxGen > 0) and (self.gen > self.maxGen):
+                if 0 < self.maxGen < self.gen:
                     break
             elif self.option == minFit:
                 if self.chromElite.f <= self.minFit:
                     break
             elif self.option == maxTime:
-                if (self.maxTime > 0) and (time() - self.time_start >= self.maxTime):
+                if 0 < self.maxTime <= time() - self.time_start:
                     break
             self.generation_process()
             # progress
-            if self.progress_fun is not None:
+            if self.progress_fun:
                 self.progress_fun(self.gen, f"{self.chromElite.f:.04f}")
             # interrupt
-            if self.interrupt_fun is not None:
-                if self.interrupt_fun():
-                    break
+            if self.interrupt_fun and self.interrupt_fun():
+                break
         self.report()
         return self.func.result(self.chromElite.v), self.fitnessTime
