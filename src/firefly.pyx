@@ -31,7 +31,7 @@ from time import time
 srand(int(time()))
 
 
-cdef double randV():
+cdef double rand_v():
     return rand() / (RAND_MAX * 1.01)
 
 
@@ -42,7 +42,7 @@ cdef class Firefly:
 
     cdef limit option
     cdef int D, n, maxGen, maxTime, rpt, gen
-    cdef double alpha, alpha0, betaMin, beta0, gamma, timeS, timeE, minFit
+    cdef double alpha, alpha0, betaMin, beta0, gamma, minFit, time_start, time_end
     cdef Verification func
     cdef object progress_fun, interrupt_fun
     cdef np.ndarray lb, ub
@@ -84,14 +84,12 @@ cdef class Firefly:
         self.beta0 = settings['beta0']
         # gamma
         self.gamma = settings['gamma']
+
         # low bound
         self.lb = np.array(self.func.get_lower())
         # up bound
         self.ub = np.array(self.func.get_upper())
-        # all fireflies, depend on population n
-        self.fireflys = np.ndarray(self.n, dtype=np.object)
-        for i in range(self.n):
-            self.fireflys[i] = Chromosome(self.D)
+
         # Algorithm will stop when the limitation has happened.
         self.maxGen = 0
         self.minFit = 0
@@ -111,6 +109,13 @@ cdef class Firefly:
         self.rpt = settings['report']
         self.progress_fun = progress_fun
         self.interrupt_fun = interrupt_fun
+
+        # all fireflies, depend on population n
+        self.fireflys = np.ndarray(self.n, dtype=np.object)
+        cdef int i
+        for i in range(self.n):
+            self.fireflys[i] = Chromosome(self.D)
+
         # generation of current
         self.gen = 0
         # best firefly of geneation
@@ -119,44 +124,45 @@ cdef class Firefly:
         self.bestFirefly = Chromosome(self.D)
 
         # setup benchmark
-        self.timeS = time()
-        self.timeE = 0
+        self.time_start = time()
+        self.time_end = 0
         self.fitnessTime = []
 
     cdef inline void init(self):
         cdef int i, j
         for i in range(self.n):
-            # init the Chromosome
+            # initialize the Chromosome
             for j in range(self.D):
-                self.fireflys[i].v[j] = randV()*(self.ub[j] - self.lb[j]) + self.lb[j];
+                self.fireflys[i].v[j] = rand_v() * (self.ub[j] - self.lb[j]) + self.lb[j]
 
-    cdef inline void movefireflies(self):
+    cdef inline void move_fireflies(self):
         cdef int i, j, k
         cdef bool is_move
         for i in range(self.n):
             is_move = False
             for j in range(self.n):
-                is_move |= self.movefly(self.fireflys[i], self.fireflys[j])
-            if not is_move:
-                for k in range(self.D):
-                    scale = self.ub[k] - self.lb[k]
-                    self.fireflys[i].v[k] += self.alpha * (randV() - 0.5) * scale
-                    self.fireflys[i].v[k] = self.check(k, self.fireflys[i].v[k])
+                is_move |= self.move_firefly(self.fireflys[i], self.fireflys[j])
+            if is_move:
+                continue
+            for k in range(self.D):
+                scale = self.ub[k] - self.lb[k]
+                self.fireflys[i].v[k] += self.alpha * (rand_v() - 0.5) * scale
+                self.fireflys[i].v[k] = self.check(k, self.fireflys[i].v[k])
 
     cdef inline void evaluate(self):
         cdef Chromosome firefly
         for firefly in self.fireflys:
             firefly.f = self.func(firefly.v)
 
-    cdef inline bool movefly(self, Chromosome me, Chromosome she):
+    cdef inline bool move_firefly(self, Chromosome me, Chromosome she):
         if me.f <= she.f:
             return False
         cdef double r = me.distance(she)
-        cdef double beta = (self.beta0 - self.betaMin)*exp(-self.gamma*r*r)+self.betaMin
+        cdef double beta = (self.beta0 - self.betaMin) * exp(-self.gamma * r * r) + self.betaMin
         cdef int i
         for i in range(me.n):
             scale = self.ub[i] - self.lb[i]
-            me.v[i] += beta * (she.v[i] - me.v[i]) + self.alpha*(randV()-0.5) * scale
+            me.v[i] += beta * (she.v[i] - me.v[i]) + self.alpha * (rand_v() - 0.5) * scale
             me.v[i] = self.check(i, me.v[i])
         return True
 
@@ -168,36 +174,32 @@ cdef class Firefly:
         else:
             return v
 
-    cdef inline Chromosome findFirefly(self):
+    cdef inline Chromosome find_firefly(self):
         cdef int i
         cdef int index = 0
-        cdef Chromosome chrom
         cdef double f = self.fireflys[0].f
-        for i in range(len(self.fireflys)):
-            chrom = self.fireflys[i]
-            if chrom.f < f:
+        for i in range(1, len(self.fireflys)):
+            if self.fireflys[i].f < f:
                 index = i
-                f = chrom.f
+                f = self.fireflys[i].f
         return self.fireflys[index]
 
     cdef inline void report(self):
-        self.timeE = time()
-        self.fitnessTime.append((self.gen, self.bestFirefly.f, self.timeE - self.timeS))
-
-    cdef inline void calculate_new_alpha(self):
-        self.alpha = self.alpha0 * log10(self.genbest.f + 1)
+        self.time_end = time()
+        self.fitnessTime.append((self.gen, self.bestFirefly.f, self.time_end - self.time_start))
 
     cdef inline void generation_process(self):
-        self.movefireflies()
+        self.move_fireflies()
         self.evaluate()
         # adjust alpha, depend on fitness value
         # if fitness value is larger, then alpha should larger
         # if fitness value is small, then alpha should smaller
-        self.genbest.assign(self.findFirefly())
+        self.genbest.assign(self.find_firefly())
         if self.bestFirefly.f > self.genbest.f:
             self.bestFirefly.assign(self.genbest)
-        # self.bestFirefly.assign(gen_best)
-        self.calculate_new_alpha()
+
+        self.alpha = self.alpha0 * log10(self.genbest.f + 1)
+
         if self.rpt:
             if self.gen % self.rpt == 0:
                 self.report()
@@ -219,7 +221,7 @@ cdef class Firefly:
                 if self.bestFirefly.f <= self.minFit:
                     break
             elif self.option == maxTime:
-                if (self.maxTime > 0) and (time() - self.timeS >= self.maxTime):
+                if (self.maxTime > 0) and (time() - self.time_start >= self.maxTime):
                     break
             self.generation_process()
             # progress

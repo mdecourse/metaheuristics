@@ -14,7 +14,9 @@ cimport numpy as np
 
 
 cdef enum limit:
-    maxGen, minFit, maxTime
+    maxGen
+    minFit
+    maxTime
 
 
 cdef class Chromosome:

@@ -30,7 +30,7 @@ from time import time
 srand(int(time()))
 
 
-cdef double randV():
+cdef double rand_v():
     return rand() / (RAND_MAX * 1.01)
 
 
@@ -41,7 +41,8 @@ cdef class Genetic:
 
     cdef limit option
     cdef int nParm, nPop, maxGen, maxTime, gen, rpt
-    cdef double pCross, pMute, pWin, bDelta, iseed, mask, seed, timeS, timeE, minFit
+    cdef double pCross, pMute, pWin, bDelta, iseed, mask, seed, minFit
+    cdef double time_start, time_end
     cdef Verification func
     cdef object progress_fun, interrupt_fun
     cdef np.ndarray chrom, newChrom, babyChrom
@@ -91,70 +92,77 @@ cdef class Genetic:
         self.rpt = settings['report']
         self.progress_fun = progress_fun
         self.interrupt_fun = interrupt_fun
+
+        # low bound
+        self.minLimit = self.func.get_lower()
+        # up bound
+        self.maxLimit = self.func.get_upper()
+
         self.chrom = np.ndarray(self.nPop, dtype=np.object)
+        self.newChrom = np.ndarray(self.nPop, dtype=np.object)
+        self.babyChrom = np.ndarray(3, dtype=np.object)
+        cdef int i
         for i in range(self.nPop):
             self.chrom[i] = Chromosome(self.nParm)
-        self.newChrom = np.ndarray(self.nPop, dtype=np.object)
         for i in range(self.nPop):
             self.newChrom[i] = Chromosome(self.nParm)
-        self.babyChrom = np.ndarray(3, dtype=np.object)
         for i in range(3):
             self.babyChrom[i] = Chromosome(self.nParm)
 
         self.chromElite = Chromosome(self.nParm)
         self.chromBest = Chromosome(self.nParm)
-        # low bound
-        self.minLimit = self.func.get_lower()
-        # up bound
-        self.maxLimit = self.func.get_upper()
-        # maxgen and gen
+
+        # generations
         self.gen = 0
 
         # setup benchmark
-        self.timeS = time()
-        self.timeE = 0
+        self.time_start = time()
+        self.time_end = 0
         self.fitnessTime = []
 
     cdef inline int random(self, int k):
-        return int(randV()*k)
+        return int(rand_v() * k)
 
-    cdef inline double randVal(self, double low, double high):
-        return randV()*(high-low)+low
+    cdef inline double rand_val(self, double low, double high):
+        return rand_v() * (high - low) + low
 
     cdef inline double check(self, int i, double v):
-        """
-        If a variable is out of bound,
-        replace it with a random value
-        """
+        """If a variable is out of bound, replace it with a random value."""
         if (v > self.maxLimit[i]) or (v < self.minLimit[i]):
-            return self.randVal(self.minLimit[i], self.maxLimit[i])
+            return self.rand_val(self.minLimit[i], self.maxLimit[i])
         return v
 
-    cdef inline void crossOver(self):
+    cdef inline void initial_pop(self):
+        cdef int i, j
+        for j in range(self.nPop):
+            for i in range(self.nParm):
+                self.chrom[j].v[i] = self.rand_val(self.minLimit[i], self.maxLimit[i])
+
+    cdef inline void cross_over(self):
         cdef int i, s, j
-        for i in range(0, self.nPop-1, 2):
-            # crossover
-            if randV() < self.pCross:
-                for s in range(self.nParm):
-                    # first baby, half father half mother
-                    self.babyChrom[0].v[s] = 0.5 * self.chrom[i].v[s] + 0.5*self.chrom[i+1].v[s]
-                    # second baby, three quaters of fater and quater of mother
-                    self.babyChrom[1].v[s] = self.check(s, 1.5 * self.chrom[i].v[s] - 0.5 * self.chrom[i+1].v[s])
-                    # third baby, quater of fater and three quaters of mother
-                    self.babyChrom[2].v[s] = self.check(s, -0.5 * self.chrom[i].v[s] + 1.5 * self.chrom[i+1].v[s])
-                # evaluate new baby
-                for j in range(3):
-                    self.babyChrom[j].f = self.func(self.babyChrom[j].v)
-                # maybe use bubble sort? smaller -> larger
-                if self.babyChrom[1].f < self.babyChrom[0].f:
-                    self.babyChrom[0], self.babyChrom[1] = self.babyChrom[1], self.babyChrom[0]
-                if self.babyChrom[2].f < self.babyChrom[0].f:
-                    self.babyChrom[2], self.babyChrom[0] = self.babyChrom[0], self.babyChrom[2]
-                if self.babyChrom[2].f < self.babyChrom[1].f:
-                    self.babyChrom[2], self.babyChrom[1] = self.babyChrom[1], self.babyChrom[2]
-                # replace first two baby to parent, another one will be
-                self.chrom[i].assign(self.babyChrom[0])
-                self.chrom[i+1].assign(self.babyChrom[1])
+        for i in range(0, self.nPop - 1, 2):
+            if not rand_v() < self.pCross:
+                continue
+            for s in range(self.nParm):
+                # first baby, half father half mother
+                self.babyChrom[0].v[s] = 0.5 * self.chrom[i].v[s] + 0.5*self.chrom[i+1].v[s]
+                # second baby, three quaters of fater and quater of mother
+                self.babyChrom[1].v[s] = self.check(s, 1.5 * self.chrom[i].v[s] - 0.5 * self.chrom[i+1].v[s])
+                # third baby, quater of fater and three quaters of mother
+                self.babyChrom[2].v[s] = self.check(s, -0.5 * self.chrom[i].v[s] + 1.5 * self.chrom[i+1].v[s])
+            # evaluate new baby
+            for j in range(3):
+                self.babyChrom[j].f = self.func(self.babyChrom[j].v)
+            # maybe use bubble sort? smaller -> larger
+            if self.babyChrom[1].f < self.babyChrom[0].f:
+                self.babyChrom[0], self.babyChrom[1] = self.babyChrom[1], self.babyChrom[0]
+            if self.babyChrom[2].f < self.babyChrom[0].f:
+                self.babyChrom[2], self.babyChrom[0] = self.babyChrom[0], self.babyChrom[2]
+            if self.babyChrom[2].f < self.babyChrom[1].f:
+                self.babyChrom[2], self.babyChrom[1] = self.babyChrom[1], self.babyChrom[2]
+            # replace first two baby to parent, another one will be
+            self.chrom[i].assign(self.babyChrom[0])
+            self.chrom[i + 1].assign(self.babyChrom[1])
 
     cdef inline double delta(self, double y):
         cdef double r
@@ -162,7 +170,7 @@ cdef class Genetic:
             r = self.gen / self.maxGen
         else:
             r = 1
-        return y*randV()*pow(1.0 - r, self.bDelta)
+        return y * rand_v() * pow(1.0 - r, self.bDelta)
 
     cdef inline void fitness(self):
         cdef int j
@@ -170,21 +178,15 @@ cdef class Genetic:
             self.chrom[j].f = self.func(self.chrom[j].v)
         self.chromBest.assign(self.chrom[0])
         for j in range(1, self.nPop):
-            if (self.chrom[j].f < self.chromBest.f):
+            if self.chrom[j].f < self.chromBest.f:
                 self.chromBest.assign(self.chrom[j])
-        if (self.chromBest.f < self.chromElite.f):
+        if self.chromBest.f < self.chromElite.f:
             self.chromElite.assign(self.chromBest)
-
-    cdef inline void initialPop(self):
-        cdef int i, j
-        for j in range(self.nPop):
-            for i in range(self.nParm):
-                self.chrom[j].v[i] = self.randVal(self.minLimit[i], self.maxLimit[i])
 
     cdef inline void mutate(self):
         cdef int i, s
         for i in range(self.nPop):
-            if randV() < self.pMute:
+            if rand_v() < self.pMute:
                 s = self.random(self.nParm)
                 if self.random(2) == 0:
                     self.chrom[i].v[s] += self.delta(self.maxLimit[s]-self.chrom[i].v[s])
@@ -192,8 +194,8 @@ cdef class Genetic:
                     self.chrom[i].v[s] -= self.delta(self.chrom[i].v[s]-self.minLimit[s])
 
     cdef inline void report(self):
-        self.timeE = time()
-        self.fitnessTime.append((self.gen, self.chromElite.f, self.timeE - self.timeS))
+        self.time_end = time()
+        self.fitnessTime.append((self.gen, self.chromElite.f, self.time_end - self.time_start))
 
     cdef inline void select(self):
         """
@@ -204,7 +206,7 @@ cdef class Genetic:
             j = self.random(self.nPop)
             k = self.random(self.nPop)
             self.newChrom[i].assign(self.chrom[j])
-            if (self.chrom[k].f < self.chrom[j].f) and (randV() < self.pWin):
+            if (self.chrom[k].f < self.chrom[j].f) and (rand_v() < self.pWin):
                 self.newChrom[i].assign(self.chrom[k])
         # in this stage, newChrom is select finish
         # now replace origin chromosome
@@ -216,7 +218,7 @@ cdef class Genetic:
 
     cdef inline void generation_process(self):
         self.select()
-        self.crossOver()
+        self.cross_over()
         self.mutate()
         self.fitness()
         if self.rpt:
@@ -233,7 +235,7 @@ cdef class Genetic:
         // **** rp  : report cycle, 0 for final report or
         // ****       report each mxg modulo rp
         """
-        self.initialPop()
+        self.initial_pop()
         self.chrom[0].f = self.func(self.chrom[0].v)
         self.chromElite.assign(self.chrom[0])
         self.fitness()
@@ -247,7 +249,7 @@ cdef class Genetic:
                 if self.chromElite.f <= self.minFit:
                     break
             elif self.option == maxTime:
-                if (self.maxTime > 0) and (time() - self.timeS >= self.maxTime):
+                if (self.maxTime > 0) and (time() - self.time_start >= self.maxTime):
                     break
             self.generation_process()
             # progress
