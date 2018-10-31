@@ -140,8 +140,8 @@ cdef class Differential:
             raise Exception('NP should be integer and larger than 0')
         if not (0 <= self.CR <= 1):
             raise Exception('CR should be [0,1]')
-        if self.strategy not in range(1, 11):
-            raise Exception('strategy should be [1,10]')
+        if self.strategy not in range(10):
+            raise Exception('strategy should be [0,9]')
         for lower, upper in zip(self.lb, self.ub):
             if lower > upper:
                 raise Exception('upper bound should be larger than lower bound')
