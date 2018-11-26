@@ -3,10 +3,10 @@
 
 """Differential Evolution.
 
-__author__ = "Yuan Chang"
-__copyright__ = "Copyright (C) 2016-2018"
-__license__ = "AGPL"
-__email__ = "pyslvs@gmail.com"
+author: Yuan Chang
+copyright: Copyright (C) 2016-2018
+license: AGPL
+email: pyslvs@gmail.com
 """
 
 cimport cython
