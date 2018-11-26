@@ -20,7 +20,6 @@ from verify cimport (
     Chromosome,
     Verification,
 )
-from cpython cimport bool
 from libc.stdlib cimport (
     rand,
     RAND_MAX,
@@ -261,7 +260,7 @@ cdef class Differential:
     cdef inline void report(self):
         self.fitnessTime.append((self.gen, self.lastgenbest.f, time() - self.time_start))
 
-    cdef inline bool over_bound(self, Chromosome member):
+    cdef inline bint over_bound(self, Chromosome member):
         """check the member's chromosome that is out of bound?"""
         cdef int i
         for i in range(self.D):

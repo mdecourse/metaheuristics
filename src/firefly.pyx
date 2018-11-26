@@ -135,7 +135,7 @@ cdef class Firefly:
 
     cdef inline void move_fireflies(self):
         cdef int i, j
-        cdef bool is_move
+        cdef bint is_move
         for i in range(self.n):
             is_move = False
             for j in range(self.n):
