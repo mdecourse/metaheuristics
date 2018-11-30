@@ -21,7 +21,6 @@ from verify cimport (
     Chromosome,
     Verification,
 )
-from cpython cimport bool
 from libc.stdlib cimport (
     rand,
     RAND_MAX,
@@ -152,7 +151,7 @@ cdef class Firefly:
         for firefly in self.fireflys:
             firefly.f = self.func(firefly.v)
 
-    cdef inline bool move_firefly(self, Chromosome me, Chromosome she):
+    cdef inline bint move_firefly(self, Chromosome me, Chromosome she):
         if me.f <= she.f:
             return False
         cdef double r = me.distance(she)
