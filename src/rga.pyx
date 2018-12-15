@@ -143,7 +143,7 @@ cdef class Genetic:
                 self.babyChrom[2].v[s] = self.check(s, -0.5 * self.chrom[i].v[s] + 1.5 * self.chrom[i+1].v[s])
             # evaluate new baby
             for j in range(3):
-                self.babyChrom[j].f = self.func(self.babyChrom[j].v)
+                self.babyChrom[j].f = self.func.fitness(self.babyChrom[j].v)
             # maybe use bubble sort? smaller -> larger
             if self.babyChrom[1].f < self.babyChrom[0].f:
                 self.babyChrom[0], self.babyChrom[1] = self.babyChrom[1], self.babyChrom[0]
@@ -166,7 +166,7 @@ cdef class Genetic:
     cdef inline void fitness(self):
         cdef int j
         for j in range(self.nPop):
-            self.chrom[j].f = self.func(self.chrom[j].v)
+            self.chrom[j].f = self.func.fitness(self.chrom[j].v)
         self.chromBest.assign(self.chrom[0])
         for j in range(1, self.nPop):
             if self.chrom[j].f < self.chromBest.f:
@@ -222,7 +222,7 @@ cdef class Genetic:
     cpdef tuple run(self):
         """Init and run GA for maxGen times."""
         self.initial_pop()
-        self.chrom[0].f = self.func(self.chrom[0].v)
+        self.chrom[0].f = self.func.fitness(self.chrom[0].v)
         self.chromElite.assign(self.chrom[0])
         self.fitness()
         self.report()

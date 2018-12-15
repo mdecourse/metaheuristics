@@ -149,7 +149,7 @@ cdef class Firefly:
     cdef inline void evaluate(self):
         cdef Chromosome firefly
         for firefly in self.fireflys:
-            firefly.f = self.func(firefly.v)
+            firefly.f = self.func.fitness(firefly.v)
 
     cdef inline bint move_firefly(self, Chromosome me, Chromosome she):
         if me.f <= she.f:

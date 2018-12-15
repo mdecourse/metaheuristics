@@ -10,7 +10,6 @@ email: pyslvs@gmail.com
 """
 
 import numpy as np
-cimport numpy as np
 cimport cython
 
 
@@ -25,30 +24,33 @@ cdef class Chromosome:
         self.f = 0.0
         self.v = np.zeros(n)
 
-    cdef double distance(self, Chromosome obj):
+    cdef double distance(self, Chromosome other):
         cdef double dist = 0
+
+        cdef int i
         cdef double diff
         for i in range(self.n):
-            diff = self.v[i] - obj.v[i]
+            diff = self.v[i] - other.v[i]
             dist += diff * diff
-            return np.sqrt(dist)
+        return np.sqrt(dist)
 
-    cpdef void assign(self, Chromosome obj):
-        if obj is not self:
-            self.n = obj.n
-            self.v[:] = obj.v
-            self.f = obj.f
+    cpdef void assign(self, Chromosome other):
+        if other is self:
+            return
+        self.n = other.n
+        self.f = other.f
+        self.v[:] = other.v
 
 
 cdef class Verification:
 
     """Verification function class base."""
 
-    cdef np.ndarray[double, ndim=1] get_upper(self):
+    cdef ndarray[double, ndim=1] get_upper(self):
         """Return upper bound."""
         raise NotImplementedError
 
-    cdef np.ndarray[double, ndim=1] get_lower(self):
+    cdef ndarray[double, ndim=1] get_lower(self):
         """Return lower bound."""
         raise NotImplementedError
 
@@ -56,7 +58,7 @@ cdef class Verification:
         """How many parameters do we need."""
         raise NotImplementedError
 
-    def __call__(self, v: np.ndarray) -> double:
+    cdef double fitness(self, ndarray v):
         """Calculate the fitness.
 
         Usage:
@@ -65,6 +67,6 @@ cdef class Verification:
         """
         raise NotImplementedError
 
-    cpdef object result(self, np.ndarray[double, ndim=1] v):
+    cpdef object result(self, ndarray[double, ndim=1] v):
         """Show the result."""
         raise NotImplementedError
