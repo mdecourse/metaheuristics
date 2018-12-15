@@ -9,25 +9,23 @@ license: AGPL
 email: pyslvs@gmail.com
 """
 
-cimport cython
+from time import time
 from libc.math cimport pow
-import numpy as np
-cimport numpy as np
+cimport cython
+from numpy cimport ndarray
 from verify cimport (
-    limit,
+    Limit,
     maxGen,
     minFit,
     maxTime,
+    rand_v,
     Chromosome,
     Verification,
 )
-from libc.stdlib cimport rand, RAND_MAX, srand
-from time import time
-srand(int(time()))
 
 
-cdef double rand_v():
-    return rand() / (RAND_MAX * 1.01)
+cdef inline double _rand_val(double low, double high):
+    return rand_v() * (high - low) + low
 
 
 @cython.final
@@ -35,14 +33,14 @@ cdef class Genetic:
 
     """Algorithm class."""
 
-    cdef limit option
+    cdef Limit option
     cdef int nParm, nPop, maxGen, maxTime, gen, rpt
     cdef double pCross, pMute, pWin, bDelta, iseed, mask, seed, minFit, time_start
     cdef Verification func
     cdef object progress_fun, interrupt_fun
-    cdef np.ndarray chrom, newChrom, babyChrom
+    cdef ndarray chrom, newChrom, babyChrom
     cdef Chromosome chromElite, chromBest
-    cdef np.ndarray maxLimit, minLimit
+    cdef ndarray maxLimit, minLimit
     cdef list fitnessTime
 
     def __cinit__(
@@ -93,41 +91,38 @@ cdef class Genetic:
         # up bound
         self.maxLimit = self.func.get_upper()
 
-        self.chrom = np.ndarray(self.nPop, dtype=np.object)
-        self.newChrom = np.ndarray(self.nPop, dtype=np.object)
-        self.babyChrom = np.ndarray(3, dtype=np.object)
+        self.chrom = ndarray(self.nPop, dtype=object)
+        self.newChrom = ndarray(self.nPop, dtype=object)
+        self.babyChrom = ndarray(3, dtype=object)
         cdef int i
         for i in range(self.nPop):
-            self.chrom[i] = Chromosome(self.nParm)
+            self.chrom[i] = Chromosome.__new__(Chromosome, self.nParm)
         for i in range(self.nPop):
-            self.newChrom[i] = Chromosome(self.nParm)
+            self.newChrom[i] = Chromosome.__new__(Chromosome, self.nParm)
         for i in range(3):
-            self.babyChrom[i] = Chromosome(self.nParm)
+            self.babyChrom[i] = Chromosome.__new__(Chromosome, self.nParm)
 
-        self.chromElite = Chromosome(self.nParm)
-        self.chromBest = Chromosome(self.nParm)
+        self.chromElite = Chromosome.__new__(Chromosome, self.nParm)
+        self.chromBest = Chromosome.__new__(Chromosome, self.nParm)
 
         # generations
         self.gen = 0
 
         # setup benchmark
-        self.time_start = time()
+        self.time_start = -1
         self.fitnessTime = []
-
-    cdef inline double rand_val(self, double low, double high):
-        return rand_v() * (high - low) + low
 
     cdef inline double check(self, int i, double v):
         """If a variable is out of bound, replace it with a random value."""
         if v > self.maxLimit[i] or v < self.minLimit[i]:
-            return self.rand_val(self.minLimit[i], self.maxLimit[i])
+            return _rand_val(self.minLimit[i], self.maxLimit[i])
         return v
 
-    cdef inline void initial_pop(self):
+    cdef inline void initialize(self):
         cdef int i, j
         for j in range(self.nPop):
             for i in range(self.nParm):
-                self.chrom[j].v[i] = self.rand_val(self.minLimit[i], self.maxLimit[i])
+                self.chrom[j].v[i] = _rand_val(self.minLimit[i], self.maxLimit[i])
 
     cdef inline void cross_over(self):
         cdef int i, s, j
@@ -221,7 +216,8 @@ cdef class Genetic:
 
     cpdef tuple run(self):
         """Init and run GA for maxGen times."""
-        self.initial_pop()
+        self.time_start = time()
+        self.initialize()
         self.chrom[0].f = self.func.fitness(self.chrom[0].v)
         self.chromElite.assign(self.chrom[0])
         self.fitness()

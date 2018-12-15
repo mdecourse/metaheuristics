@@ -9,29 +9,31 @@ license: AGPL
 email: pyslvs@gmail.com
 """
 
+from time import time
+from numpy import array as np_array
 cimport cython
-from libc.math cimport exp, log10
-import numpy as np
-cimport numpy as np
+from libc.math cimport exp, log10, sqrt
+from numpy cimport ndarray
 from verify cimport (
-    limit,
+    Limit,
     maxGen,
     minFit,
     maxTime,
+    rand_v,
     Chromosome,
     Verification,
 )
-from libc.stdlib cimport (
-    rand,
-    RAND_MAX,
-    srand,
-)
-from time import time
-srand(int(time()))
 
 
-cdef double rand_v():
-    return rand() / (RAND_MAX * 1.01)
+cdef inline double _distance(Chromosome me, Chromosome she):
+    """Distance of two fireflies."""
+    cdef double dist = 0
+    cdef int i
+    cdef double diff
+    for i in range(me.n):
+        diff = me.v[i] - she.v[i]
+        dist += diff * diff
+    return sqrt(dist)
 
 
 @cython.final
@@ -39,12 +41,12 @@ cdef class Firefly:
 
     """Algorithm class."""
 
-    cdef limit option
+    cdef Limit option
     cdef int D, n, maxGen, maxTime, rpt, gen
     cdef double alpha, alpha0, betaMin, beta0, gamma, minFit, time_start
     cdef Verification func
     cdef object progress_fun, interrupt_fun
-    cdef np.ndarray lb, ub, fireflys
+    cdef ndarray lb, ub, fireflys
     cdef Chromosome genbest, bestFirefly
     cdef list fitnessTime
 
@@ -78,15 +80,15 @@ cdef class Firefly:
         self.alpha0 = settings['alpha']
         # betamin, the minimal attraction, must not less than this
         self.betaMin = settings['betaMin']
-        # beta0, the attraction of two firefly in 0 distance
+        # beta0, the attraction of two firefly in 0 distance.
         self.beta0 = settings['beta0']
         # gamma
         self.gamma = settings['gamma']
 
         # low bound
-        self.lb = np.array(self.func.get_lower())
+        self.lb = np_array(self.func.get_lower())
         # up bound
-        self.ub = np.array(self.func.get_upper())
+        self.ub = np_array(self.func.get_upper())
 
         # Algorithm will stop when the limitation has happened.
         self.maxGen = 0
@@ -109,23 +111,23 @@ cdef class Firefly:
         self.interrupt_fun = interrupt_fun
 
         # all fireflies, depend on population n
-        self.fireflys = np.ndarray(self.n, dtype=np.object)
+        self.fireflys = ndarray(self.n, dtype=object)
         cdef int i
         for i in range(self.n):
-            self.fireflys[i] = Chromosome(self.D)
+            self.fireflys[i] = Chromosome.__new__(Chromosome, self.D)
 
         # generation of current
         self.gen = 0
         # best firefly of geneation
-        self.genbest = Chromosome(self.D)
+        self.genbest = Chromosome.__new__(Chromosome, self.D)
         # best firefly so far
-        self.bestFirefly = Chromosome(self.D)
+        self.bestFirefly = Chromosome.__new__(Chromosome, self.D)
 
         # setup benchmark
-        self.time_start = time()
+        self.time_start = -1
         self.fitnessTime = []
 
-    cdef inline void init(self):
+    cdef inline void initialize(self):
         cdef int i, j
         for i in range(self.n):
             # initialize the Chromosome
@@ -154,7 +156,7 @@ cdef class Firefly:
     cdef inline bint move_firefly(self, Chromosome me, Chromosome she):
         if me.f <= she.f:
             return False
-        cdef double r = me.distance(she)
+        cdef double r = _distance(me, she)
         cdef double beta = (self.beta0 - self.betaMin) * exp(-self.gamma * r * r) + self.betaMin
         cdef int i
         for i in range(me.n):
@@ -204,7 +206,8 @@ cdef class Firefly:
                 self.report()
 
     cpdef tuple run(self):
-        self.init()
+        self.time_start = time()
+        self.initialize()
         self.evaluate()
         self.bestFirefly.assign(self.fireflys[0])
         self.report()

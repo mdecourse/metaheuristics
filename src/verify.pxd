@@ -12,10 +12,13 @@ email: pyslvs@gmail.com
 from numpy cimport ndarray
 
 
-cdef enum limit:
+cdef enum Limit:
     maxGen
     minFit
     maxTime
+
+
+cdef double rand_v()
 
 
 cdef class Chromosome:
@@ -23,13 +26,12 @@ cdef class Chromosome:
     cdef public double f
     cdef public ndarray v
 
-    cdef double distance(self, Chromosome obj)
-    cpdef void assign(self, Chromosome obj)
+    cdef void assign(self, Chromosome obj)
 
 
 cdef class Verification:
     cdef ndarray[double, ndim=1] get_upper(self)
     cdef ndarray[double, ndim=1] get_lower(self)
     cdef int get_nParm(self)
-    cdef double fitness(self, ndarray v)
+    cdef double fitness(self, ndarray[double, ndim=1] v)
     cpdef object result(self, ndarray[double, ndim=1] v)

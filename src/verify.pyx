@@ -9,8 +9,15 @@ license: AGPL
 email: pyslvs@gmail.com
 """
 
-import numpy as np
+from time import time
+from numpy import zeros as np_zeros
 cimport cython
+from libc.stdlib cimport rand, RAND_MAX, srand
+srand(int(time()))
+
+
+cdef inline double rand_v():
+    return rand() / (RAND_MAX * 1.01)
 
 
 @cython.final
@@ -22,24 +29,14 @@ cdef class Chromosome:
     def __cinit__(self, n: int):
         self.n = n if n > 0 else 2
         self.f = 0.0
-        self.v = np.zeros(n)
+        self.v = np_zeros(n)
 
-    cdef double distance(self, Chromosome other):
-        cdef double dist = 0
-
-        cdef int i
-        cdef double diff
-        for i in range(self.n):
-            diff = self.v[i] - other.v[i]
-            dist += diff * diff
-        return np.sqrt(dist)
-
-    cpdef void assign(self, Chromosome other):
+    cdef void assign(self, Chromosome other):
         if other is self:
             return
         self.n = other.n
         self.f = other.f
-        self.v[:] = other.v
+        self.v = other.v.copy()
 
 
 cdef class Verification:
@@ -58,7 +55,7 @@ cdef class Verification:
         """How many parameters do we need."""
         raise NotImplementedError
 
-    cdef double fitness(self, ndarray v):
+    cdef double fitness(self, ndarray[double, ndim=1] v):
         """Calculate the fitness.
 
         Usage:

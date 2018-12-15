@@ -9,28 +9,19 @@ license: AGPL
 email: pyslvs@gmail.com
 """
 
+from time import time
+from numpy import array as np_array
 cimport cython
-import numpy as np
-cimport numpy as np
+from numpy cimport ndarray
 from verify cimport (
-    limit,
+    Limit,
     maxGen,
     minFit,
     maxTime,
+    rand_v,
     Chromosome,
     Verification,
 )
-from libc.stdlib cimport (
-    rand,
-    RAND_MAX,
-    srand,
-)
-from time import time
-srand(int(time()))
-
-
-cdef double rand_v():
-    return rand() / (RAND_MAX * 1.01)
 
 
 @cython.final
@@ -38,10 +29,10 @@ cdef class Differential:
 
     """Algorithm class."""
 
-    cdef limit option
+    cdef Limit option
     cdef int strategy, D, NP, maxGen, maxTime, rpt, gen, r1, r2, r3, r4, r5
     cdef double F, CR, minFit, time_start
-    cdef np.ndarray lb, ub, pop
+    cdef ndarray lb, ub, pop
     cdef Verification func
     cdef object progress_fun, interrupt_fun
     cdef Chromosome lastgenbest, currentbest
@@ -80,9 +71,9 @@ cdef class Differential:
         # CR in [0,1]
         self.CR = settings['CR']
         # low bound
-        self.lb = np.array(self.func.get_lower())
+        self.lb = np_array(self.func.get_lower())
         # up bound
-        self.ub = np.array(self.func.get_upper())
+        self.ub = np_array(self.func.get_upper())
         # Algorithm will stop when the limitation has happened.
         self.maxGen = 0
         self.minFit = 0
@@ -107,15 +98,15 @@ cdef class Differential:
         self.check_parameter()
 
         # generation pool, depend on population size
-        self.pop = np.ndarray(self.NP, dtype=np.object)
+        self.pop = ndarray(self.NP, dtype=object)
         cdef int i
         for i in range(self.NP):
-            self.pop[i] = Chromosome(self.D)
+            self.pop[i] = Chromosome.__new__(Chromosome, self.D)
 
         # last generation best member
-        self.lastgenbest = Chromosome(self.D)
+        self.lastgenbest = Chromosome.__new__(Chromosome, self.D)
         # current best member
-        self.currentbest = Chromosome(self.D)
+        self.currentbest = Chromosome.__new__(Chromosome, self.D)
 
         # the generation count
         self.gen = 0
@@ -128,7 +119,7 @@ cdef class Differential:
         self.r5 = 0
 
         # setup benchmark
-        self.time_start = time()
+        self.time_start = -1
         self.fitnessTime = []
 
     cdef inline void check_parameter(self):
@@ -151,23 +142,20 @@ cdef class Differential:
         for i in range(self.NP):
             for j in range(self.D):
                 self.pop[i].v[j] = self.lb[j] + rand_v() * (self.ub[j] - self.lb[j])
-            self.pop[i].f = self.evaluate(self.pop[i])
-
-    cdef inline double evaluate(self, Chromosome member):
-        """Evalute the member in environment."""
-        return self.func.fitness(member.v)
+            self.pop[i].f = self.func.fitness(self.pop[i].v)
 
     cdef inline Chromosome find_best(self):
         """Find member that have minimum fitness value from pool."""
-        cdef int i
         cdef int index = 0
-        cdef Chromosome chromosome
         cdef double f = self.pop[0].f
+
+        cdef int i
+        cdef Chromosome c
         for i in range(len(self.pop)):
-            chromosome = self.pop[i]
-            if chromosome.f < f:
+            c = self.pop[i]
+            if c.f < f:
                 index = i
-                f = chromosome.f
+                f = c.f
         return self.pop[index]
 
     cdef inline void generate_random_vector(self, int i):
@@ -191,7 +179,7 @@ cdef class Differential:
 
     cdef inline Chromosome recombination(self, int i):
         """use new vector, recombination the new one member to tmp."""
-        cdef Chromosome tmp = Chromosome(self.D)
+        cdef Chromosome tmp = Chromosome.__new__(Chromosome, self.D)
         tmp.assign(self.pop[i])
         cdef int n = int(rand_v() * self.D)
         cdef int l_v = 0
@@ -282,7 +270,7 @@ cdef class Differential:
                 continue
             # is not out of bound, that mean it's qualify of enviorment
             # then evaluate the one
-            tmp.f = self.evaluate(tmp)
+            tmp.f = self.func.fitness(tmp.v)
             # if temporary one is better than origin(fitness value is smaller)
             if tmp.f <= self.pop[i].f:
                 # copy the temporary one to origin member
@@ -303,6 +291,7 @@ cdef class Differential:
 
     cpdef tuple run(self):
         """Run the algorithm ..."""
+        self.time_start = time()
         # initialize the member's chromosome
         self.initialize()
         # find the best one (smallest fitness value)
