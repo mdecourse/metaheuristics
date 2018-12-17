@@ -258,7 +258,7 @@ cdef class Differential:
 
     cdef inline void generation_process(self):
         cdef int i
-        cdef Chromosome tmp
+        cdef Chromosome tmp, baby
         for i in range(self.NP):
             # generate new vector
             self.generate_random_vector(i)
@@ -274,7 +274,8 @@ cdef class Differential:
             # if temporary one is better than origin(fitness value is smaller)
             if tmp.f <= self.pop[i].f:
                 # copy the temporary one to origin member
-                self.pop[i].assign(tmp)
+                baby = self.pop[i]
+                baby.assign(tmp)
                 # check the temporary one is better than the currentbest
                 if tmp.f < self.currentbest.f:
                     # copy the temporary one to currentbest
@@ -290,7 +291,7 @@ cdef class Differential:
                 self.report()
 
     cpdef tuple run(self):
-        """Run the algorithm ..."""
+        """Run the algorithm."""
         self.time_start = time()
         # initialize the member's chromosome
         self.initialize()

@@ -16,8 +16,9 @@ from libc.stdlib cimport rand, RAND_MAX, srand
 srand(int(time()))
 
 
-cdef inline double rand_v():
-    return rand() / (RAND_MAX * 1.01)
+@cython.cdivision
+cdef inline double rand_v() nogil:
+    return <double>rand() / (RAND_MAX * 1.01)
 
 
 @cython.final

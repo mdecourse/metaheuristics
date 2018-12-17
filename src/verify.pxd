@@ -18,14 +18,13 @@ cdef enum Limit:
     maxTime
 
 
-cdef double rand_v()
+cdef double rand_v() nogil
 
 
 cdef class Chromosome:
     cdef public int n
     cdef public double f
     cdef public ndarray v
-
     cdef void assign(self, Chromosome obj)
 
 

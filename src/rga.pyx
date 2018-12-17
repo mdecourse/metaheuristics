@@ -126,16 +126,17 @@ cdef class Genetic:
 
     cdef inline void cross_over(self):
         cdef int i, s, j
+        cdef Chromosome baby
         for i in range(0, self.nPop - 1, 2):
             if not rand_v() < self.pCross:
                 continue
             for s in range(self.nParm):
                 # first baby, half father half mother
-                self.babyChrom[0].v[s] = 0.5 * self.chrom[i].v[s] + 0.5*self.chrom[i+1].v[s]
+                self.babyChrom[0].v[s] = 0.5 * self.chrom[i].v[s] + 0.5 * self.chrom[i + 1].v[s]
                 # second baby, three quaters of fater and quater of mother
-                self.babyChrom[1].v[s] = self.check(s, 1.5 * self.chrom[i].v[s] - 0.5 * self.chrom[i+1].v[s])
+                self.babyChrom[1].v[s] = self.check(s, 1.5 * self.chrom[i].v[s] - 0.5 * self.chrom[i + 1].v[s])
                 # third baby, quater of fater and three quaters of mother
-                self.babyChrom[2].v[s] = self.check(s, -0.5 * self.chrom[i].v[s] + 1.5 * self.chrom[i+1].v[s])
+                self.babyChrom[2].v[s] = self.check(s, -0.5 * self.chrom[i].v[s] + 1.5 * self.chrom[i + 1].v[s])
             # evaluate new baby
             for j in range(3):
                 self.babyChrom[j].f = self.func.fitness(self.babyChrom[j].v)
@@ -147,13 +148,16 @@ cdef class Genetic:
             if self.babyChrom[2].f < self.babyChrom[1].f:
                 self.babyChrom[2], self.babyChrom[1] = self.babyChrom[1], self.babyChrom[2]
             # replace first two baby to parent, another one will be
-            self.chrom[i].assign(self.babyChrom[0])
-            self.chrom[i + 1].assign(self.babyChrom[1])
+            baby = self.chrom[i]
+            baby.assign(self.babyChrom[0])
+            baby = self.chrom[i + 1]
+            baby.assign(self.babyChrom[1])
 
     cdef inline double delta(self, double y):
         cdef double r
         if self.maxGen > 0:
-            r = self.gen / self.maxGen
+            with cython.cdivision:
+                r = <double>self.gen / self.maxGen
         else:
             r = 1
         return y * rand_v() * pow(1.0 - r, self.bDelta)
@@ -188,19 +192,24 @@ cdef class Genetic:
         roulette wheel selection
         """
         cdef int i, j, k
+        cdef Chromosome baby
         for i in range(self.nPop):
             j = int(rand_v() * self.nPop)
             k = int(rand_v() * self.nPop)
-            self.newChrom[i].assign(self.chrom[j])
+            baby = self.newChrom[i]
+            baby.assign(self.chrom[j])
             if self.chrom[k].f < self.chrom[j].f and rand_v() < self.pWin:
-                self.newChrom[i].assign(self.chrom[k])
+                baby = self.newChrom[i]
+                baby.assign(self.chrom[k])
         # in this stage, newChrom is select finish
         # now replace origin chromosome
         for i in range(self.nPop):
-            self.chrom[i].assign(self.newChrom[i])
+            baby = self.chrom[i]
+            baby.assign(self.newChrom[i])
         # select random one chromosome to be best chromosome, make best chromosome still exist
         j = int(rand_v() * self.nPop)
-        self.chrom[j].assign(self.chromElite)
+        baby = self.chrom[j]
+        baby.assign(self.chromElite)
 
     cdef inline void generation_process(self):
         self.select()
