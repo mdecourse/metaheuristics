@@ -27,7 +27,7 @@ cdef class Chromosome:
 
     """Data structure class."""
 
-    def __cinit__(self, n: int):
+    def __cinit__(self, int n):
         self.n = n if n > 0 else 2
         self.f = 0.0
         self.v = np_zeros(n)
