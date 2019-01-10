@@ -15,9 +15,9 @@ cimport cython
 from numpy cimport ndarray
 from verify cimport (
     Limit,
-    maxGen,
-    minFit,
-    maxTime,
+    MAX_GEN,
+    MIN_FIT,
+    MAX_TIME,
     rand_v,
     Chromosome,
     Verification,
@@ -30,8 +30,8 @@ cdef class Differential:
     """Algorithm class."""
 
     cdef Limit option
-    cdef int strategy, D, NP, maxGen, maxTime, rpt, gen, r1, r2, r3, r4, r5
-    cdef double F, CR, minFit, time_start
+    cdef int strategy, D, NP, max_gen, max_time, rpt, gen, r1, r2, r3, r4, r5
+    cdef double F, CR, min_fit, time_start
     cdef ndarray lb, ub, pop
     cdef Verification func
     cdef object progress_fun, interrupt_fun
@@ -75,18 +75,18 @@ cdef class Differential:
         # up bound
         self.ub = np_array(self.func.get_upper())
         # Algorithm will stop when the limitation has happened.
-        self.maxGen = 0
-        self.minFit = 0
-        self.maxTime = 0
+        self.max_gen = 0
+        self.min_fit = 0
+        self.max_time = 0
         if 'maxGen' in settings:
-            self.option = maxGen
-            self.maxGen = settings['maxGen']
+            self.option = MAX_GEN
+            self.max_gen = settings['maxGen']
         elif 'minFit' in settings:
-            self.option = minFit
-            self.minFit = settings['minFit']
+            self.option = MIN_FIT
+            self.min_fit = settings['minFit']
         elif 'maxTime' in settings:
-            self.option = maxTime
-            self.maxTime = settings['maxTime']
+            self.option = MAX_TIME
+            self.max_time = settings['maxTime']
         else:
             raise Exception("Please give 'maxGen', 'minFit' or 'maxTime' limit.")
         # Report function
@@ -307,14 +307,14 @@ cdef class Differential:
         # the evolution journey is begin ...
         while True:
             self.gen += 1
-            if self.option == maxGen:
-                if 0 < self.maxGen < self.gen:
+            if self.option == MAX_GEN:
+                if 0 < self.max_gen <= self.gen:
                     break
-            elif self.option == minFit:
-                if self.lastgenbest.f <= self.minFit:
+            elif self.option == MIN_FIT:
+                if self.lastgenbest.f <= self.min_fit:
                     break
-            elif self.option == maxTime:
-                if 0 < self.maxTime <= time() - self.time_start:
+            elif self.option == MAX_TIME:
+                if 0 < self.max_time <= time() - self.time_start:
                     break
             self.generation_process()
             # progress

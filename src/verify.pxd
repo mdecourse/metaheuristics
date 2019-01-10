@@ -13,9 +13,9 @@ from numpy cimport ndarray
 
 
 cdef enum Limit:
-    maxGen
-    minFit
-    maxTime
+    MAX_GEN
+    MIN_FIT
+    MAX_TIME
 
 
 cdef double rand_v() nogil

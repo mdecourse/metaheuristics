@@ -15,9 +15,9 @@ cimport cython
 from numpy cimport ndarray
 from verify cimport (
     Limit,
-    maxGen,
-    minFit,
-    maxTime,
+    MAX_GEN,
+    MIN_FIT,
+    MAX_TIME,
     rand_v,
     Chromosome,
     Verification,
@@ -34,8 +34,8 @@ cdef class Genetic:
     """Algorithm class."""
 
     cdef Limit option
-    cdef int nParm, nPop, maxGen, maxTime, gen, rpt
-    cdef double pCross, pMute, pWin, bDelta, iseed, mask, seed, minFit, time_start
+    cdef int nParm, nPop, max_gen, max_time, gen, rpt
+    cdef double pCross, pMute, pWin, bDelta, iseed, mask, seed, min_fit, time_start
     cdef Verification func
     cdef object progress_fun, interrupt_fun
     cdef ndarray chrom, newChrom, babyChrom
@@ -68,18 +68,18 @@ cdef class Genetic:
         self.pMute = settings['pMute']
         self.pWin = settings['pWin']
         self.bDelta = settings['bDelta']
-        self.maxGen = 0
-        self.minFit = 0
-        self.maxTime = 0
+        self.max_gen = 0
+        self.min_fit = 0
+        self.max_time = 0
         if 'maxGen' in settings:
-            self.option = maxGen
-            self.maxGen = settings['maxGen']
+            self.option = MAX_GEN
+            self.max_gen = settings['maxGen']
         elif 'minFit' in settings:
-            self.option = minFit
-            self.minFit = settings['minFit']
+            self.option = MIN_FIT
+            self.min_fit = settings['minFit']
         elif 'maxTime' in settings:
-            self.option = maxTime
-            self.maxTime = settings['maxTime']
+            self.option = MAX_TIME
+            self.max_time = settings['maxTime']
         else:
             raise Exception("Please give 'maxGen', 'minFit' or 'maxTime' limit.")
         self.rpt = settings['report']
@@ -155,9 +155,9 @@ cdef class Genetic:
 
     cdef inline double delta(self, double y):
         cdef double r
-        if self.maxGen > 0:
+        if self.max_gen > 0:
             with cython.cdivision:
-                r = <double>self.gen / self.maxGen
+                r = <double>self.gen / self.max_gen
         else:
             r = 1
         return y * rand_v() * pow(1.0 - r, self.bDelta)
@@ -233,14 +233,14 @@ cdef class Genetic:
         self.report()
         while True:
             self.gen += 1
-            if self.option == maxGen:
-                if 0 < self.maxGen < self.gen:
+            if self.option == MAX_GEN:
+                if 0 < self.max_gen <= self.gen:
                     break
-            elif self.option == minFit:
-                if self.chromElite.f <= self.minFit:
+            elif self.option == MIN_FIT:
+                if self.chromElite.f <= self.min_fit:
                     break
-            elif self.option == maxTime:
-                if 0 < self.maxTime <= time() - self.time_start:
+            elif self.option == MAX_TIME:
+                if 0 < self.max_time <= time() - self.time_start:
                     break
             self.generation_process()
             # progress
