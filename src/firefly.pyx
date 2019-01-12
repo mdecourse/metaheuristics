@@ -211,8 +211,11 @@ cdef class Firefly:
         self.evaluate()
         self.bestFirefly.assign(self.fireflys[0])
         self.report()
+
         while True:
             self.gen += 1
+            self.generation_process()
+
             if self.option == MAX_GEN:
                 if 0 < self.max_gen <= self.gen:
                     break
@@ -222,12 +225,14 @@ cdef class Firefly:
             elif self.option == MAX_TIME:
                 if 0 < self.max_time <= time() - self.time_start:
                     break
-            self.generation_process()
+
             # progress
-            if self.progress_fun:
+            if self.progress_fun is not None:
                 self.progress_fun(self.gen, f"{self.bestFirefly.f:.04f}")
+
             # interrupt
-            if self.interrupt_fun and self.interrupt_fun():
+            if self.interrupt_fun is not None and self.interrupt_fun():
                 break
+
         self.report()
         return self.func.result(self.bestFirefly.v), self.fitnessTime
