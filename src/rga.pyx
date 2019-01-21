@@ -57,7 +57,7 @@ cdef class Genetic:
             'pMute',
             'pWin',
             'bDelta',
-            'maxGen' or 'minFit' or 'maxTime',
+            'max_gen' or 'min_fit' or 'max_time',
             'report'
         }
         """
@@ -71,17 +71,17 @@ cdef class Genetic:
         self.max_gen = 0
         self.min_fit = 0
         self.max_time = 0
-        if 'maxGen' in settings:
+        if 'max_gen' in settings:
             self.option = MAX_GEN
-            self.max_gen = settings['maxGen']
-        elif 'minFit' in settings:
+            self.max_gen = settings['max_gen']
+        elif 'min_fit' in settings:
             self.option = MIN_FIT
-            self.min_fit = settings['minFit']
-        elif 'maxTime' in settings:
+            self.min_fit = settings['min_fit']
+        elif 'max_time' in settings:
             self.option = MAX_TIME
-            self.max_time = settings['maxTime']
+            self.max_time = settings['max_time']
         else:
-            raise Exception("Please give 'maxGen', 'minFit' or 'maxTime' limit.")
+            raise Exception("Please give 'max_gen', 'min_fit' or 'max_time' limit.")
         self.rpt = settings['report']
         self.progress_fun = progress_fun
         self.interrupt_fun = interrupt_fun
@@ -224,7 +224,7 @@ cdef class Genetic:
                 self.report()
 
     cpdef tuple run(self):
-        """Init and run GA for maxGen times."""
+        """Init and run GA for max_gen times."""
         self.time_start = time()
         self.initialize()
         self.chrom[0].f = self.func.fitness(self.chrom[0].v)

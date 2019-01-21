@@ -64,7 +64,7 @@ cdef class Firefly:
             'betaMin',
             'beta0',
             'gamma',
-            'maxGen', 'minFit' or 'maxTime',
+            'max_gen', 'min_fit' or 'max_time',
             'report'
         }
         """
@@ -94,17 +94,17 @@ cdef class Firefly:
         self.max_gen = 0
         self.min_fit = 0
         self.max_time = 0
-        if 'maxGen' in settings:
+        if 'max_gen' in settings:
             self.option = MAX_GEN
-            self.max_gen = settings['maxGen']
-        elif 'minFit' in settings:
+            self.max_gen = settings['max_gen']
+        elif 'min_fit' in settings:
             self.option = MIN_FIT
-            self.min_fit = settings['minFit']
-        elif 'maxTime' in settings:
+            self.min_fit = settings['min_fit']
+        elif 'max_time' in settings:
             self.option = MAX_TIME
-            self.max_time = settings['maxTime']
+            self.max_time = settings['max_time']
         else:
-            raise Exception("Please give 'maxGen', 'minFit' or 'maxTime' limit.")
+            raise Exception("Please give 'max_gen', 'min_fit' or 'max_time' limit.")
         # Report function
         self.rpt = settings['report']
         self.progress_fun = progress_fun
