@@ -73,17 +73,17 @@ cdef class Firefly:
         # D, the dimension of question and each firefly will random place position in this landscape
         self.D = self.func.get_nParm()
         # n, the population size of fireflies
-        self.n = settings['n']
+        self.n = settings.get('n', 80)
         # alpha, the step size
-        self.alpha = settings['alpha']
+        self.alpha = settings.get('alpha', 0.01)
         # alpha0, use to calculate_new_alpha
-        self.alpha0 = settings['alpha']
+        self.alpha0 = self.alpha
         # betamin, the minimal attraction, must not less than this
-        self.betaMin = settings['betaMin']
+        self.betaMin = settings.get('betaMin', 0.2)
         # beta0, the attraction of two firefly in 0 distance.
-        self.beta0 = settings['beta0']
+        self.beta0 = settings.get('beta0', 1.)
         # gamma
-        self.gamma = settings['gamma']
+        self.gamma = settings.get('gamma', 1.)
 
         # low bound
         self.lb = np_array(self.func.get_lower())
@@ -106,7 +106,7 @@ cdef class Firefly:
         else:
             raise Exception("Please give 'max_gen', 'min_fit' or 'max_time' limit.")
         # Report function
-        self.rpt = settings['report']
+        self.rpt = settings.get('report', 0)
         self.progress_fun = progress_fun
         self.interrupt_fun = interrupt_fun
 

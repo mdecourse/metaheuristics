@@ -63,11 +63,11 @@ cdef class Genetic:
         """
         self.func = func
         self.nParm = self.func.get_nParm()
-        self.nPop = settings['nPop']
-        self.pCross = settings['pCross']
-        self.pMute = settings['pMute']
-        self.pWin = settings['pWin']
-        self.bDelta = settings['bDelta']
+        self.nPop = settings.get('nPop', 500)
+        self.pCross = settings.get('pCross', 0.95)
+        self.pMute = settings.get('pMute', 0.05)
+        self.pWin = settings.get('pWin', 0.95)
+        self.bDelta = settings.get('bDelta', 5.)
         self.max_gen = 0
         self.min_fit = 0
         self.max_time = 0
@@ -82,7 +82,7 @@ cdef class Genetic:
             self.max_time = settings['max_time']
         else:
             raise Exception("Please give 'max_gen', 'min_fit' or 'max_time' limit.")
-        self.rpt = settings['report']
+        self.rpt = settings.get('report', 0)
         self.progress_fun = progress_fun
         self.interrupt_fun = interrupt_fun
 

@@ -60,16 +60,16 @@ cdef class Differential:
         # dimension of question
         self.D = self.func.get_nParm()
         # strategy 1~10, choice what strategy to generate new member in temporary
-        self.strategy = settings['strategy']
+        self.strategy = settings.get('strategy', 1)
         # population size
         # To start off NP = 10*D is a reasonable choice. Increase NP if misconvergence
-        self.NP = settings['NP']
+        self.NP = settings.get('NP', 400)
         # weight factor
         # F is usually between 0.5 and 1 (in rare cases > 1)
-        self.F = settings['F']
+        self.F = settings.get('F', 0.6)
         # crossover possible
         # CR in [0,1]
-        self.CR = settings['CR']
+        self.CR = settings.get('CR', 0.9)
         # low bound
         self.lb = np_array(self.func.get_lower())
         # up bound
@@ -90,7 +90,7 @@ cdef class Differential:
         else:
             raise Exception("Please give 'max_gen', 'min_fit' or 'max_time' limit.")
         # Report function
-        self.rpt = settings['report']
+        self.rpt = settings.get('report', 0)
         self.progress_fun = progress_fun
         self.interrupt_fun = interrupt_fun
 
