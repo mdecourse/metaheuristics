@@ -52,7 +52,7 @@ cdef class Verification:
         """Return lower bound."""
         raise NotImplementedError
 
-    cdef int get_nParm(self):
+    cdef int length(self):
         """How many parameters do we need."""
         raise NotImplementedError
 

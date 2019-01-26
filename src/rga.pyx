@@ -62,7 +62,7 @@ cdef class Genetic:
         }
         """
         self.func = func
-        self.nParm = self.func.get_nParm()
+        self.nParm = self.func.length()
         self.nPop = settings.get('nPop', 500)
         self.pCross = settings.get('pCross', 0.95)
         self.pMute = settings.get('pMute', 0.05)

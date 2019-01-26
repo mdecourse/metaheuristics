@@ -71,7 +71,7 @@ cdef class Firefly:
         # object function
         self.func = func
         # D, the dimension of question and each firefly will random place position in this landscape
-        self.D = self.func.get_nParm()
+        self.D = self.func.length()
         # n, the population size of fireflies
         self.n = settings.get('n', 80)
         # alpha, the step size

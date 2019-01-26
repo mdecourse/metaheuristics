@@ -58,7 +58,7 @@ cdef class Differential:
         # object function, or environment
         self.func = func
         # dimension of question
-        self.D = self.func.get_nParm()
+        self.D = self.func.length()
         # strategy 1~10, choice what strategy to generate new member in temporary
         self.strategy = settings.get('strategy', 1)
         # population size

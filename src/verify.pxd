@@ -31,6 +31,6 @@ cdef class Chromosome:
 cdef class Verification:
     cdef ndarray[double, ndim=1] get_upper(self)
     cdef ndarray[double, ndim=1] get_lower(self)
-    cdef int get_nParm(self)
+    cdef int length(self)
     cdef double fitness(self, ndarray[double, ndim=1] v)
     cpdef object result(self, ndarray[double, ndim=1] v)
