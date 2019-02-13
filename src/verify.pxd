@@ -18,7 +18,7 @@ cdef enum Limit:
     MAX_TIME
 
 
-cdef double rand_v() nogil
+cdef double rand_v(double lower = *, double upper = *) nogil
 
 
 cdef class Chromosome:

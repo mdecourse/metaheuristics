@@ -35,8 +35,8 @@ cdef class Differential:
     cdef ndarray lb, ub, pop
     cdef Verification func
     cdef object progress_fun, interrupt_fun
-    cdef Chromosome lastgenbest, currentbest
-    cdef list fitnessTime
+    cdef Chromosome last_best, current_best
+    cdef list fitness_time
 
     def __cinit__(
         self,
@@ -104,9 +104,9 @@ cdef class Differential:
             self.pop[i] = Chromosome.__new__(Chromosome, self.D)
 
         # last generation best member
-        self.lastgenbest = Chromosome.__new__(Chromosome, self.D)
+        self.last_best = Chromosome.__new__(Chromosome, self.D)
         # current best member
-        self.currentbest = Chromosome.__new__(Chromosome, self.D)
+        self.current_best = Chromosome.__new__(Chromosome, self.D)
 
         # the generation count
         self.gen = 0
@@ -120,7 +120,7 @@ cdef class Differential:
 
         # setup benchmark
         self.time_start = -1
-        self.fitnessTime = []
+        self.fitness_time = []
 
     cdef inline void check_parameter(self):
         """Check parameter is set properly."""
@@ -141,7 +141,7 @@ cdef class Differential:
         cdef int i, j
         for i in range(self.NP):
             for j in range(self.D):
-                self.pop[i].v[j] = self.lb[j] + rand_v() * (self.ub[j] - self.lb[j])
+                self.pop[i].v[j] = rand_v(self.lb[j], self.ub[j])
             self.pop[i].f = self.func.fitness(self.pop[i].v)
 
     cdef inline Chromosome find_best(self):
@@ -163,29 +163,29 @@ cdef class Differential:
         self.r1 = self.r2 = self.r3 = self.r4 = self.r5 = i
         cdef set compare_set = {i}
         while self.r1 in compare_set:
-            self.r1 = int(rand_v() * self.NP)
+            self.r1 = <int>rand_v(0, self.NP)
         compare_set.add(self.r1)
         while self.r2 in compare_set:
-            self.r2 = int(rand_v() * self.NP)
+            self.r2 = <int>rand_v(0, self.NP)
         compare_set.add(self.r2)
         while self.r3 in compare_set:
-            self.r3 = int(rand_v() * self.NP)
+            self.r3 = <int>rand_v(0, self.NP)
         compare_set.add(self.r3)
         while self.r4 in compare_set:
-            self.r4 = int(rand_v() * self.NP)
+            self.r4 = <int>rand_v(0, self.NP)
         compare_set.add(self.r5)
         while self.r5 in compare_set:
-            self.r5 = int(rand_v() * self.NP)
+            self.r5 = <int>rand_v(0, self.NP)
 
     cdef inline Chromosome recombination(self, int i):
         """use new vector, recombination the new one member to tmp."""
         cdef Chromosome tmp = Chromosome.__new__(Chromosome, self.D)
         tmp.assign(self.pop[i])
-        cdef int n = int(rand_v() * self.D)
+        cdef int n = <int> rand_v(0, self.D)
         cdef int l_v = 0
         if self.strategy == 1:
             while True:
-                tmp.v[n] = self.lastgenbest.v[n] + self.F * (self.pop[self.r2].v[n] - self.pop[self.r3].v[n])
+                tmp.v[n] = self.last_best.v[n] + self.F * (self.pop[self.r2].v[n] - self.pop[self.r3].v[n])
                 n = (n + 1) % self.D
                 l_v += 1
                 if not (rand_v() < self.CR and l_v < self.D):
@@ -199,14 +199,14 @@ cdef class Differential:
                     break
         elif self.strategy == 3:
             while True:
-                tmp.v[n] = tmp.v[n] + self.F * (self.lastgenbest.v[n] - tmp.v[n]) + self.F*(self.pop[self.r1].v[n] - self.pop[self.r2].v[n])
+                tmp.v[n] = tmp.v[n] + self.F * (self.last_best.v[n] - tmp.v[n]) + self.F*(self.pop[self.r1].v[n] - self.pop[self.r2].v[n])
                 n = (n + 1) % self.D
                 l_v += 1
                 if not (rand_v() < self.CR and l_v < self.D):
                     break
         elif self.strategy == 4:
             while True:
-                tmp.v[n] = self.lastgenbest.v[n] + (self.pop[self.r1].v[n] + self.pop[self.r2].v[n] - self.pop[self.r3].v[n] - self.pop[self.r4].v[n]) * self.F
+                tmp.v[n] = self.last_best.v[n] + (self.pop[self.r1].v[n] + self.pop[self.r2].v[n] - self.pop[self.r3].v[n] - self.pop[self.r4].v[n]) * self.F
                 n = (n + 1) % self.D
                 l_v += 1
                 if not (rand_v() < self.CR and l_v < self.D):
@@ -221,7 +221,7 @@ cdef class Differential:
         elif self.strategy == 6:
             for l_v in range(self.D):
                 if rand_v() < self.CR or l_v == self.D - 1:
-                    tmp.v[n] = self.lastgenbest.v[n] + self.F * (self.pop[self.r2].v[n] - self.pop[self.r3].v[n])
+                    tmp.v[n] = self.last_best.v[n] + self.F * (self.pop[self.r2].v[n] - self.pop[self.r3].v[n])
                 n = (n + 1) % self.D
         elif self.strategy == 7:
             for l_v in range(self.D):
@@ -231,12 +231,12 @@ cdef class Differential:
         elif self.strategy == 8:
             for l_v in range(self.D):
                 if rand_v() < self.CR or l_v == self.D - 1:
-                    tmp.v[n] = tmp.v[n] + self.F*(self.lastgenbest.v[n] - tmp.v[n]) + self.F*(self.pop[self.r1].v[n] - self.pop[self.r2].v[n])
+                    tmp.v[n] = tmp.v[n] + self.F*(self.last_best.v[n] - tmp.v[n]) + self.F*(self.pop[self.r1].v[n] - self.pop[self.r2].v[n])
                 n = (n + 1) % self.D
         elif self.strategy == 9:
             for l_v in range(self.D):
                 if rand_v() < self.CR or l_v == self.D - 1:
-                    tmp.v[n] = self.lastgenbest.v[n] + (self.pop[self.r1].v[n] + self.pop[self.r2].v[n] - self.pop[self.r3].v[n] - self.pop[self.r4].v[n]) * self.F
+                    tmp.v[n] = self.last_best.v[n] + (self.pop[self.r1].v[n] + self.pop[self.r2].v[n] - self.pop[self.r3].v[n] - self.pop[self.r4].v[n]) * self.F
                 n = (n + 1) % self.D
         else:
             for l_v in range(self.D):
@@ -246,7 +246,7 @@ cdef class Differential:
         return tmp
 
     cdef inline void report(self):
-        self.fitnessTime.append((self.gen, self.lastgenbest.f, time() - self.time_start))
+        self.fitness_time.append((self.gen, self.last_best.f, time() - self.time_start))
 
     cdef inline bint over_bound(self, Chromosome member):
         """check the member's chromosome that is out of bound?"""
@@ -276,12 +276,12 @@ cdef class Differential:
                 # copy the temporary one to origin member
                 baby = self.pop[i]
                 baby.assign(tmp)
-                # check the temporary one is better than the currentbest
-                if tmp.f < self.currentbest.f:
-                    # copy the temporary one to currentbest
-                    self.currentbest.assign(tmp)
-        # copy the currentbest to lastgenbest
-        self.lastgenbest.assign(self.currentbest)
+                # check the temporary one is better than the current_best
+                if tmp.f < self.current_best.f:
+                    # copy the temporary one to current_best
+                    self.current_best.assign(tmp)
+        # copy the current_best to last_best
+        self.last_best.assign(self.current_best)
         # if report generation is set, report
         if self.rpt:
             if self.gen % self.rpt == 0:
@@ -297,10 +297,10 @@ cdef class Differential:
         self.initialize()
         # find the best one (smallest fitness value)
         cdef Chromosome tmp = self.find_best()
-        # copy to lastgenbest
-        self.lastgenbest.assign(tmp)
-        # copy to currentbest
-        self.currentbest.assign(tmp)
+        # copy to last_best
+        self.last_best.assign(tmp)
+        # copy to current_best
+        self.current_best.assign(tmp)
         # report status
         self.report()
 
@@ -313,7 +313,7 @@ cdef class Differential:
                 if 0 < self.max_gen <= self.gen:
                     break
             elif self.option == MIN_FIT:
-                if self.lastgenbest.f <= self.min_fit:
+                if self.last_best.f <= self.min_fit:
                     break
             elif self.option == MAX_TIME:
                 if 0 < self.max_time <= time() - self.time_start:
@@ -321,7 +321,7 @@ cdef class Differential:
 
             # progress
             if self.progress_fun is not None:
-                self.progress_fun(self.gen, f"{self.lastgenbest.f:.04f}")
+                self.progress_fun(self.gen, f"{self.last_best.f:.04f}")
 
             # interrupt
             if self.interrupt_fun is not None and self.interrupt_fun():
@@ -329,4 +329,4 @@ cdef class Differential:
 
         # the evolution journey is done, report the final status
         self.report()
-        return self.func.result(self.lastgenbest.v), self.fitnessTime
+        return self.func.result(self.last_best.v), self.fitness_time

@@ -12,13 +12,13 @@ email: pyslvs@gmail.com
 from time import time
 from numpy import zeros as np_zeros
 cimport cython
-from libc.stdlib cimport rand, RAND_MAX, srand
+from libc.stdlib cimport rand, srand
 srand(int(time()))
 
 
 @cython.cdivision
-cdef inline double rand_v() nogil:
-    return <double>rand() / (RAND_MAX * 1.01)
+cdef inline double rand_v(double lower = 0., double upper = 1.) nogil:
+    return <double>rand() % (upper - lower + 1) + lower
 
 
 @cython.final
