@@ -54,7 +54,7 @@ cdef class Verification:
 
     cdef int length(self):
         """How many parameters do we need."""
-        raise NotImplementedError
+        return len(self.get_upper())
 
     cdef double fitness(self, ndarray[double, ndim=1] v):
         """Calculate the fitness.
