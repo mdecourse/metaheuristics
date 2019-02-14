@@ -162,26 +162,27 @@ cdef class Differential:
         """Generate new vector."""
         self.r1 = self.r2 = self.r3 = self.r4 = self.r5 = i
         cdef set compare_set = {i}
+        cdef int np = self.NP - 1
         while self.r1 in compare_set:
-            self.r1 = <int>rand_v(0, self.NP)
+            self.r1 = <int>rand_v(0, np)
         compare_set.add(self.r1)
         while self.r2 in compare_set:
-            self.r2 = <int>rand_v(0, self.NP)
+            self.r2 = <int>rand_v(0, np)
         compare_set.add(self.r2)
         while self.r3 in compare_set:
-            self.r3 = <int>rand_v(0, self.NP)
+            self.r3 = <int>rand_v(0, np)
         compare_set.add(self.r3)
         while self.r4 in compare_set:
-            self.r4 = <int>rand_v(0, self.NP)
+            self.r4 = <int>rand_v(0, np)
         compare_set.add(self.r5)
         while self.r5 in compare_set:
-            self.r5 = <int>rand_v(0, self.NP)
+            self.r5 = <int>rand_v(0, np)
 
     cdef inline Chromosome recombination(self, int i):
         """use new vector, recombination the new one member to tmp."""
         cdef Chromosome tmp = Chromosome.__new__(Chromosome, self.D)
         tmp.assign(self.pop[i])
-        cdef int n = <int> rand_v(0, self.D)
+        cdef int n = <int>rand_v(0, self.D - 1)
         cdef int l_v = 0
         if self.strategy == 1:
             while True:
