@@ -40,10 +40,10 @@ cdef class Genetic:
 
     def __cinit__(
         self,
-        Verification func,
-        dict settings,
-        object progress_fun = None,
-        object interrupt_fun = None
+        func: Verification,
+        settings: dict,
+        progress_fun: object = None,
+        interrupt_fun: object = None
     ):
         """
         settings = {
