@@ -173,7 +173,7 @@ cdef class Genetic:
         for i in range(self.nPop):
             if not rand_v() < self.pMute:
                 continue
-            s = int(rand_v() * self.nParm)
+            s = <int>rand_v(0, self.nParm - 1)
             if int(rand_v() * 2) == 0:
                 self.chromosome[i].v[s] += self.delta(self.ub[s] - self.chromosome[i].v[s])
             else:
@@ -189,8 +189,8 @@ cdef class Genetic:
         cdef int i, j, k
         cdef Chromosome baby
         for i in range(self.nPop):
-            j = int(rand_v() * self.nPop)
-            k = int(rand_v() * self.nPop)
+            j = <int>rand_v(0, self.nPop - 1)
+            k = <int>rand_v(0, self.nPop - 1)
             baby = self.new_chromosome[i]
             baby.assign(self.chromosome[j])
             if self.chromosome[k].f < self.chromosome[j].f and rand_v() < self.pWin:
@@ -202,7 +202,7 @@ cdef class Genetic:
             baby = self.chromosome[i]
             baby.assign(self.new_chromosome[i])
         # select random one chromosome to be best chromosome, make best chromosome still exist
-        j = int(rand_v() * self.nPop)
+        j = <int>rand_v(0, self.nPop - 1)
         baby = self.chromosome[j]
         baby.assign(self.current_best)
 
