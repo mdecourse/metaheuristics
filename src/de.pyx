@@ -88,7 +88,7 @@ cdef class Differential:
             self.option = MAX_TIME
             self.max_time = settings['max_time']
         else:
-            raise Exception("Please give 'max_gen', 'min_fit' or 'max_time' limit.")
+            raise ValueError("Please give 'max_gen', 'min_fit' or 'max_time' limit.")
         # Report function
         self.rpt = settings.get('report', 0)
         self.progress_fun = progress_fun
@@ -125,16 +125,13 @@ cdef class Differential:
     cdef inline void check_parameter(self):
         """Check parameter is set properly."""
         if self.D <= 0:
-            raise Exception('D should be integer and larger than 0')
+            raise ValueError('D should be integer and larger than 0')
         if self.NP <= 0:
-            raise Exception('NP should be integer and larger than 0')
+            raise ValueError('NP should be integer and larger than 0')
         if not (0 <= self.CR <= 1):
-            raise Exception('CR should be [0,1]')
+            raise ValueError('CR should be [0,1]')
         if self.strategy not in range(10):
-            raise Exception('strategy should be [0,9]')
-        for lower, upper in zip(self.lb, self.ub):
-            if lower > upper:
-                raise Exception('upper bound should be larger than lower bound')
+            raise ValueError('strategy should be [0,9]')
 
     cdef inline void initialize(self):
         """Initial population."""

@@ -76,7 +76,7 @@ cdef class Genetic:
             self.option = MAX_TIME
             self.max_time = settings['max_time']
         else:
-            raise Exception("Please give 'max_gen', 'min_fit' or 'max_time' limit.")
+            raise ValueError("Please give 'max_gen', 'min_fit' or 'max_time' limit.")
         self.rpt = settings.get('report', 0)
         self.progress_fun = progress_fun
         self.interrupt_fun = interrupt_fun
