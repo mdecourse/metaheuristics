@@ -177,7 +177,7 @@ cdef class Genetic:
             if not rand_v() < self.pMute:
                 continue
             s = <int>rand_v(0, self.nParm - 1)
-            if int(rand_v() * 2) == 0:
+            if rand_v() < 0.5:
                 self.chromosome[i].v[s] += self.delta(self.ub[s] - self.chromosome[i].v[s])
             else:
                 self.chromosome[i].v[s] -= self.delta(self.chromosome[i].v[s] - self.lb[s])
