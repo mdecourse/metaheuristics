@@ -57,7 +57,7 @@ cdef class Genetic:
         }
         """
         self.func = func
-        self.nParm = self.func.length()
+
         self.nPop = settings.get('nPop', 500)
         self.pCross = settings.get('pCross', 0.95)
         self.pMute = settings.get('pMute', 0.05)
@@ -76,7 +76,7 @@ cdef class Genetic:
             self.option = MAX_TIME
             self.max_time = settings['max_time']
         else:
-            raise ValueError("Please give 'max_gen', 'min_fit' or 'max_time' limit.")
+            raise ValueError("please give 'max_gen', 'min_fit' or 'max_time' limit")
         self.rpt = settings.get('report', 0)
         self.progress_fun = progress_fun
         self.interrupt_fun = interrupt_fun
@@ -85,6 +85,9 @@ cdef class Genetic:
         self.lb = self.func.get_lower()
         # up bound
         self.ub = self.func.get_upper()
+        if len(self.lb) != len(self.ub):
+            raise ValueError("length of upper and lower bounds must be equal")
+        self.nParm = len(self.lb)
 
         self.chromosome = ndarray(self.nPop, dtype=object)
         self.new_chromosome = ndarray(self.nPop, dtype=object)

@@ -57,8 +57,7 @@ cdef class Differential:
         """
         # object function, or environment
         self.func = func
-        # dimension of question
-        self.D = self.func.length()
+
         # strategy 1~10, choice what strategy to generate new member in temporary
         self.strategy = settings.get('strategy', 1)
         # population size
@@ -71,9 +70,13 @@ cdef class Differential:
         # CR in [0,1]
         self.CR = settings.get('CR', 0.9)
         # low bound
-        self.lb = np_array(self.func.get_lower())
+        self.lb = self.func.get_lower()
         # up bound
-        self.ub = np_array(self.func.get_upper())
+        self.ub = self.func.get_upper()
+        if len(self.lb) != len(self.ub):
+            raise ValueError("length of upper and lower bounds must be equal")
+        # dimension of question
+        self.D = len(self.lb)
         # Algorithm will stop when the limitation has happened.
         self.max_gen = 0
         self.min_fit = 0
@@ -88,7 +91,7 @@ cdef class Differential:
             self.option = MAX_TIME
             self.max_time = settings['max_time']
         else:
-            raise ValueError("Please give 'max_gen', 'min_fit' or 'max_time' limit.")
+            raise ValueError("please give 'max_gen', 'min_fit' or 'max_time' limit")
         # Report function
         self.rpt = settings.get('report', 0)
         self.progress_fun = progress_fun

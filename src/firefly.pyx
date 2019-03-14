@@ -70,8 +70,7 @@ cdef class Firefly:
         """
         # object function
         self.func = func
-        # D, the dimension of question and each firefly will random place position in this landscape
-        self.D = self.func.length()
+
         # n, the population size of fireflies
         self.n = settings.get('n', 80)
         # alpha, the step size
@@ -86,9 +85,13 @@ cdef class Firefly:
         self.gamma = settings.get('gamma', 1.)
 
         # low bound
-        self.lb = np_array(self.func.get_lower())
+        self.lb = self.func.get_lower()
         # up bound
-        self.ub = np_array(self.func.get_upper())
+        self.ub = self.func.get_upper()
+        if len(self.lb) != len(self.ub):
+            raise ValueError("length of upper and lower bounds must be equal")
+        # D, the dimension of question and each firefly will random place position in this landscape
+        self.D = len(self.lb)
 
         # Algorithm will stop when the limitation has happened.
         self.max_gen = 0
@@ -104,7 +107,7 @@ cdef class Firefly:
             self.option = MAX_TIME
             self.max_time = settings['max_time']
         else:
-            raise ValueError("Please give 'max_gen', 'min_fit' or 'max_time' limit.")
+            raise ValueError("please give 'max_gen', 'min_fit' or 'max_time' limit")
         # Report function
         self.rpt = settings.get('report', 0)
         self.progress_fun = progress_fun

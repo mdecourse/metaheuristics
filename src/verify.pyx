@@ -52,10 +52,6 @@ cdef class Verification:
         """Return lower bound."""
         raise NotImplementedError
 
-    cdef int length(self):
-        """How many parameters do we need."""
-        return len(self.get_upper())
-
     cdef double fitness(self, ndarray[double, ndim=1] v):
         """Calculate the fitness.
 
