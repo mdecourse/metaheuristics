@@ -231,13 +231,13 @@ cdef class Firefly:
             self.generation_process()
 
             if self.option == MAX_GEN:
-                if 0 < self.max_gen <= self.gen:
+                if self.gen >= self.max_gen > 0:
                     break
             elif self.option == MIN_FIT:
                 if self.last_best.f <= self.min_fit:
                     break
             elif self.option == MAX_TIME:
-                if 0 < self.max_time <= time() - self.time_start:
+                if time() - self.time_start >= self.max_time > 0:
                     break
 
             # progress
