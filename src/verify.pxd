@@ -19,12 +19,13 @@ cdef enum Limit:
 
 
 cdef double rand_v(double lower = *, double upper = *) nogil
+cdef int rand_i(int upper) nogil
 
 
 cdef class Chromosome:
-    cdef public int n
-    cdef public double f
-    cdef public ndarray v
+    cdef int n
+    cdef double f
+    cdef ndarray v
     cdef void assign(self, Chromosome obj)
 
 

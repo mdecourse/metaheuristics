@@ -10,9 +10,13 @@ email: pyslvs@gmail.com
 """
 
 from time import time
-from numpy import array as np_array
 cimport cython
-from libc.math cimport exp, log10, sqrt
+from libc.math cimport (
+    exp,
+    log10,
+    sqrt,
+    HUGE_VAL,
+)
 from numpy cimport ndarray
 from verify cimport (
     Limit,
@@ -43,7 +47,7 @@ cdef class Firefly:
 
     cdef Limit option
     cdef int D, n, max_gen, max_time, rpt, gen
-    cdef double alpha, alpha0, betaMin, beta0, gamma, min_fit, time_start
+    cdef double alpha, alpha0, beta_min, beta0, gamma, min_fit, time_start
     cdef Verification func
     cdef object progress_fun, interrupt_fun
     cdef ndarray lb, ub, fireflies
@@ -61,7 +65,7 @@ cdef class Firefly:
         settings = {
             'n',
             'alpha',
-            'betaMin',
+            'beta_min',
             'beta0',
             'gamma',
             'max_gen', 'min_fit' or 'max_time',
@@ -77,8 +81,8 @@ cdef class Firefly:
         self.alpha = settings.get('alpha', 0.01)
         # alpha0, use to calculate_new_alpha
         self.alpha0 = self.alpha
-        # betamin, the minimal attraction, must not less than this
-        self.betaMin = settings.get('betaMin', 0.2)
+        # beta_min, the minimal attraction, must not less than this
+        self.beta_min = settings.get('beta_min', 0.2)
         # beta0, the attraction of two firefly in 0 distance.
         self.beta0 = settings.get('beta0', 1.)
         # gamma
@@ -132,24 +136,28 @@ cdef class Firefly:
 
     cdef inline void initialize(self):
         cdef int i, j
+        cdef Chromosome tmp
         for i in range(self.n):
             # initialize the Chromosome
+            tmp = self.fireflies[i]
             for j in range(self.D):
-                self.fireflies[i].v[j] = rand_v(self.lb[j], self.ub[j])
+                tmp.v[j] = rand_v(self.lb[j], self.ub[j])
 
     cdef inline void move_fireflies(self):
         cdef int i, j
         cdef bint is_move
+        cdef Chromosome tmp
         for i in range(self.n):
             is_move = False
+            tmp = self.fireflies[i]
             for j in range(self.n):
-                is_move |= self.move_firefly(self.fireflies[i], self.fireflies[j])
+                is_move |= self.move_firefly(tmp, self.fireflies[j])
             if is_move:
                 continue
             for j in range(self.D):
                 scale = self.ub[j] - self.lb[j]
-                self.fireflies[i].v[j] += self.alpha * (rand_v() - 0.5) * scale
-                self.fireflies[i].v[j] = self.check(j, self.fireflies[i].v[j])
+                tmp.v[j] += self.alpha * scale * rand_v(-0.5, 0.5)
+                tmp.v[j] = self.check(j, tmp.v[j])
 
     cdef inline void evaluate(self):
         cdef Chromosome firefly
@@ -160,11 +168,11 @@ cdef class Firefly:
         if me.f <= she.f:
             return False
         cdef double r = _distance(me, she)
-        cdef double beta = (self.beta0 - self.betaMin) * exp(-self.gamma * r * r) + self.betaMin
+        cdef double beta = (self.beta0 - self.beta_min) * exp(-self.gamma * r * r) + self.beta_min
         cdef int i
         for i in range(me.n):
             scale = self.ub[i] - self.lb[i]
-            me.v[i] += beta * (she.v[i] - me.v[i]) + self.alpha * (rand_v() - 0.5) * scale
+            me.v[i] += beta * (she.v[i] - me.v[i]) + self.alpha * scale * rand_v(-0.5, 0.5)
             me.v[i] = self.check(i, me.v[i])
         return True
 
@@ -177,13 +185,16 @@ cdef class Firefly:
             return v
 
     cdef inline Chromosome find_firefly(self):
-        cdef int i
         cdef int index = 0
-        cdef double f = self.fireflies[0].f
-        for i in range(1, len(self.fireflies)):
-            if self.fireflies[i].f < f:
+        cdef double f = HUGE_VAL
+
+        cdef int i
+        cdef Chromosome tmp
+        for i, tmp in enumerate(self.fireflies):
+            tmp = self.fireflies[i]
+            if tmp.f < f:
                 index = i
-                f = self.fireflies[i].f
+                f = tmp.f
         return self.fireflies[index]
 
     cdef inline void report(self):

@@ -10,7 +10,7 @@ email: pyslvs@gmail.com
 """
 
 from time import time
-from libc.math cimport pow
+from libc.math cimport pow, HUGE_VAL
 cimport cython
 from numpy cimport ndarray
 from verify cimport (
@@ -19,6 +19,7 @@ from verify cimport (
     MIN_FIT,
     MAX_TIME,
     rand_v,
+    rand_i,
     Chromosome,
     Verification,
 )
@@ -34,8 +35,8 @@ cdef class Genetic:
     cdef double pCross, pMute, pWin, bDelta, min_fit, time_start
     cdef Verification func
     cdef object progress_fun, interrupt_fun
-    cdef ndarray chromosome, new_chromosome, baby_chromosome, ub, lb
-    cdef Chromosome current_best, last_best
+    cdef ndarray chromosome, new_chromosome, ub, lb
+    cdef Chromosome current_best
     cdef list fitness_time
 
     def __cinit__(
@@ -91,17 +92,13 @@ cdef class Genetic:
 
         self.chromosome = ndarray(self.nPop, dtype=object)
         self.new_chromosome = ndarray(self.nPop, dtype=object)
-        self.baby_chromosome = ndarray(3, dtype=object)
         cdef int i
         for i in range(self.nPop):
             self.chromosome[i] = Chromosome.__new__(Chromosome, self.nParm)
         for i in range(self.nPop):
             self.new_chromosome[i] = Chromosome.__new__(Chromosome, self.nParm)
-        for i in range(3):
-            self.baby_chromosome[i] = Chromosome.__new__(Chromosome, self.nParm)
 
         self.current_best = Chromosome.__new__(Chromosome, self.nParm)
-        self.last_best = Chromosome.__new__(Chromosome, self.nParm)
 
         # generations
         self.gen = 0
@@ -118,38 +115,50 @@ cdef class Genetic:
 
     cdef inline void initialize(self):
         cdef int i, j
-        for j in range(self.nPop):
-            for i in range(self.nParm):
-                self.chromosome[j].v[i] = rand_v(self.lb[i], self.ub[i])
+        cdef Chromosome tmp
+        for i in range(self.nPop):
+            tmp = self.chromosome[i]
+            for j in range(self.nParm):
+                tmp.v[j] = rand_v(self.lb[j], self.ub[j])
+
+        tmp = self.chromosome[0]
+        tmp.f = self.func.fitness(tmp.v)
+        self.current_best.assign(tmp)
 
     cdef inline void cross_over(self):
+        cdef Chromosome c1 = Chromosome.__new__(Chromosome, self.nParm)
+        cdef Chromosome c2 = Chromosome.__new__(Chromosome, self.nParm)
+        cdef Chromosome c3 = Chromosome.__new__(Chromosome, self.nParm)
+
         cdef int i, s, j
-        cdef Chromosome baby
+        cdef Chromosome b1, b2
         for i in range(0, self.nPop - 1, 2):
             if not rand_v() < self.pCross:
                 continue
+
+            b1 = self.chromosome[i]
+            b2 = self.chromosome[i + 1]
             for s in range(self.nParm):
                 # first baby, half father half mother
-                self.baby_chromosome[0].v[s] = 0.5 * self.chromosome[i].v[s] + 0.5 * self.chromosome[i + 1].v[s]
+                c1.v[s] = 0.5 * b1.v[s] + 0.5 * b2.v[s]
                 # second baby, three quarters of father and quarter of mother
-                self.baby_chromosome[1].v[s] = self.check(s, 1.5 * self.chromosome[i].v[s] - 0.5 * self.chromosome[i + 1].v[s])
+                c2.v[s] = self.check(s, 1.5 * b1.v[s] - 0.5 * b2.v[s])
                 # third baby, quarter of father and three quarters of mother
-                self.baby_chromosome[2].v[s] = self.check(s, -0.5 * self.chromosome[i].v[s] + 1.5 * self.chromosome[i + 1].v[s])
+                c3.v[s] = self.check(s, -0.5 * b1.v[s] + 1.5 * b2.v[s])
             # evaluate new baby
-            for j in range(3):
-                self.baby_chromosome[j].f = self.func.fitness(self.baby_chromosome[j].v)
+            c1.f = self.func.fitness(c1.v)
+            c2.f = self.func.fitness(c2.v)
+            c3.f = self.func.fitness(c3.v)
             # maybe use bubble sort? smaller -> larger
-            if self.baby_chromosome[1].f < self.baby_chromosome[0].f:
-                self.baby_chromosome[0], self.baby_chromosome[1] = self.baby_chromosome[1], self.baby_chromosome[0]
-            if self.baby_chromosome[2].f < self.baby_chromosome[0].f:
-                self.baby_chromosome[2], self.baby_chromosome[0] = self.baby_chromosome[0], self.baby_chromosome[2]
-            if self.baby_chromosome[2].f < self.baby_chromosome[1].f:
-                self.baby_chromosome[2], self.baby_chromosome[1] = self.baby_chromosome[1], self.baby_chromosome[2]
+            if c1.f > c2.f:
+                c1, c2 = c2, c1
+            if c1.f > c3.f:
+                c1, c3 = c3, c1
+            if c2.f > c3.f:
+                c2, c3 = c3, c2
             # replace first two baby to parent, another one will be
-            baby = self.chromosome[i]
-            baby.assign(self.baby_chromosome[0])
-            baby = self.chromosome[i + 1]
-            baby.assign(self.baby_chromosome[1])
+            b1.assign(c1)
+            b2.assign(c2)
 
     @cython.cdivision
     cdef inline double delta(self, double y):
@@ -161,26 +170,34 @@ cdef class Genetic:
         return y * rand_v() * pow(1.0 - r, self.bDelta)
 
     cdef inline void fitness(self):
-        cdef int j
-        for j in range(self.nPop):
-            self.chromosome[j].f = self.func.fitness(self.chromosome[j].v)
-        self.last_best.assign(self.chromosome[0])
-        for j in range(1, self.nPop):
-            if self.chromosome[j].f < self.last_best.f:
-                self.last_best.assign(self.chromosome[j])
-        if self.last_best.f < self.current_best.f:
-            self.current_best.assign(self.last_best)
+        cdef int i
+        cdef Chromosome tmp
+        for i in range(self.nPop):
+            tmp = self.chromosome[i]
+            tmp.f = self.func.fitness(tmp.v)
+
+        cdef int index = 0
+        cdef double f = HUGE_VAL
+
+        for i, tmp in enumerate(self.chromosome):
+            if tmp.f < f:
+                index = i
+                f = tmp.f
+        if f < self.current_best.f:
+            self.current_best.assign(self.chromosome[index])
 
     cdef inline void mutate(self):
         cdef int i, s
+        cdef Chromosome tmp
         for i in range(self.nPop):
             if not rand_v() < self.pMute:
                 continue
-            s = <int>rand_v(0, self.nParm - 1)
+            s = rand_i(self.nParm)
+            tmp = self.chromosome[i]
             if rand_v() < 0.5:
-                self.chromosome[i].v[s] += self.delta(self.ub[s] - self.chromosome[i].v[s])
+                tmp.v[s] += self.delta(self.ub[s] - tmp.v[s])
             else:
-                self.chromosome[i].v[s] -= self.delta(self.chromosome[i].v[s] - self.lb[s])
+                tmp.v[s] -= self.delta(tmp.v[s] - self.lb[s])
 
     cdef inline void report(self):
         self.fitness_time.append((self.gen, self.current_best.f, time() - self.time_start))
@@ -190,23 +207,24 @@ cdef class Genetic:
         roulette wheel selection
         """
         cdef int i, j, k
-        cdef Chromosome baby
+        cdef Chromosome baby, b1, b2
         for i in range(self.nPop):
-            j = <int>rand_v(0, self.nPop - 1)
-            k = <int>rand_v(0, self.nPop - 1)
+            j = rand_i(self.nPop)
+            k = rand_i(self.nPop)
+            b1 = self.chromosome[j]
+            b2 = self.chromosome[k]
             baby = self.new_chromosome[i]
-            baby.assign(self.chromosome[j])
-            if self.chromosome[k].f < self.chromosome[j].f and rand_v() < self.pWin:
-                baby = self.new_chromosome[i]
-                baby.assign(self.chromosome[k])
+            if b1.f > b2.f and rand_v() < self.pWin:
+                baby.assign(b2)
+            else:
+                baby.assign(b1)
         # in this stage, new_chromosome is select finish
         # now replace origin chromosome
         for i in range(self.nPop):
             baby = self.chromosome[i]
             baby.assign(self.new_chromosome[i])
         # select random one chromosome to be best chromosome, make best chromosome still exist
-        j = <int>rand_v(0, self.nPop - 1)
-        baby = self.chromosome[j]
+        baby = self.chromosome[rand_i(self.nPop)]
         baby.assign(self.current_best)
 
     cdef inline void generation_process(self):
@@ -225,8 +243,6 @@ cdef class Genetic:
         """Init and run GA for max_gen times."""
         self.time_start = time()
         self.initialize()
-        self.chromosome[0].f = self.func.fitness(self.chromosome[0].v)
-        self.current_best.assign(self.chromosome[0])
         self.fitness()
         self.report()
 

@@ -10,8 +10,8 @@ email: pyslvs@gmail.com
 """
 
 from time import time
-from numpy import array as np_array
 cimport cython
+from libc.math cimport HUGE_VAL
 from numpy cimport ndarray
 from verify cimport (
     Limit,
@@ -19,6 +19,7 @@ from verify cimport (
     MIN_FIT,
     MAX_TIME,
     rand_v,
+    rand_i,
     Chromosome,
     Verification,
 )
@@ -32,7 +33,7 @@ cdef class Differential:
     cdef Limit option
     cdef int strategy, D, NP, max_gen, max_time, rpt, gen, r1, r2, r3, r4, r5
     cdef double F, CR, min_fit, time_start
-    cdef ndarray lb, ub, pop
+    cdef ndarray lb, ub, pool
     cdef Verification func
     cdef object progress_fun, interrupt_fun
     cdef Chromosome last_best, current_best
@@ -101,10 +102,10 @@ cdef class Differential:
         self.check_parameter()
 
         # generation pool, depend on population size
-        self.pop = ndarray(self.NP, dtype=object)
+        self.pool = ndarray(self.NP, dtype=object)
         cdef int i
         for i in range(self.NP):
-            self.pop[i] = Chromosome.__new__(Chromosome, self.D)
+            self.pool[i] = Chromosome.__new__(Chromosome, self.D)
 
         # last generation best member
         self.last_best = Chromosome.__new__(Chromosome, self.D)
@@ -115,11 +116,7 @@ cdef class Differential:
         self.gen = 0
 
         # the vector
-        self.r1 = 0
-        self.r2 = 0
-        self.r3 = 0
-        self.r4 = 0
-        self.r5 = 0
+        self.r1 = self.r2 = self.r3 = self.r4 = self.r5 = 0
 
         # setup benchmark
         self.time_start = -1
@@ -139,110 +136,143 @@ cdef class Differential:
     cdef inline void initialize(self):
         """Initial population."""
         cdef int i, j
+        cdef Chromosome tmp
         for i in range(self.NP):
+            tmp = self.pool[i]
             for j in range(self.D):
-                self.pop[i].v[j] = rand_v(self.lb[j], self.ub[j])
-            self.pop[i].f = self.func.fitness(self.pop[i].v)
+                tmp.v[j] = rand_v(self.lb[j], self.ub[j])
+            tmp.f = self.func.fitness(tmp.v)
 
     cdef inline Chromosome find_best(self):
         """Find member that have minimum fitness value from pool."""
         cdef int index = 0
-        cdef double f = self.pop[0].f
+        cdef double f = HUGE_VAL
 
         cdef int i
-        cdef Chromosome c
-        for i in range(len(self.pop)):
-            c = self.pop[i]
-            if c.f < f:
+        cdef Chromosome tmp
+        for i, tmp in enumerate(self.pool):
+            if tmp.f < f:
                 index = i
-                f = c.f
-        return self.pop[index]
+                f = tmp.f
+        return self.pool[index]
 
     cdef inline void generate_random_vector(self, int i):
         """Generate new vector."""
         self.r1 = self.r2 = self.r3 = self.r4 = self.r5 = i
-        cdef set compare_set = {i}
-        cdef int np = self.NP - 1
-        while self.r1 in compare_set:
-            self.r1 = <int>rand_v(0, np)
-        compare_set.add(self.r1)
-        while self.r2 in compare_set:
-            self.r2 = <int>rand_v(0, np)
-        compare_set.add(self.r2)
-        while self.r3 in compare_set:
-            self.r3 = <int>rand_v(0, np)
-        compare_set.add(self.r3)
-        while self.r4 in compare_set:
-            self.r4 = <int>rand_v(0, np)
-        compare_set.add(self.r5)
-        while self.r5 in compare_set:
-            self.r5 = <int>rand_v(0, np)
+        while self.r1 == i:
+            self.r1 = rand_i(self.NP)
+        while self.r2 in {i, self.r1}:
+            self.r2 = rand_i(self.NP)
+
+        if self.strategy in {1, 3, 6, 8}:
+            return
+
+        while self.r3 in {i, self.r1, self.r2}:
+            self.r3 = rand_i(self.NP)
+
+        if self.strategy in {2, 7}:
+            return
+
+        while self.r4 in {i, self.r1, self.r2, self.r3}:
+            self.r4 = rand_i(self.NP)
+
+        if self.strategy in {4, 9}:
+            return
+
+        while self.r5 in {i, self.r1, self.r2, self.r3, self.r4}:
+            self.r5 = rand_i(self.NP)
 
     cdef inline Chromosome recombination(self, int i):
         """use new vector, recombination the new one member to tmp."""
+        cdef Chromosome c1, c2, c3, c4, c5
         cdef Chromosome tmp = Chromosome.__new__(Chromosome, self.D)
-        tmp.assign(self.pop[i])
-        cdef int n = <int>rand_v(0, self.D - 1)
+        tmp.assign(self.pool[i])
+
+        cdef int n = rand_i(self.D)
         cdef int l_v = 0
+        c1 = self.pool[self.r1]
+        c2 = self.pool[self.r2]
         if self.strategy == 1:
+            # Random used: 2
             while True:
-                tmp.v[n] = self.last_best.v[n] + self.F * (self.pop[self.r2].v[n] - self.pop[self.r3].v[n])
+                tmp.v[n] = self.last_best.v[n] + self.F * (c1.v[n] - c2.v[n])
                 n = (n + 1) % self.D
                 l_v += 1
                 if not (rand_v() < self.CR and l_v < self.D):
                     break
         elif self.strategy == 2:
+            # Random used: 3
+            c3 = self.pool[self.r3]
             while True:
-                tmp.v[n] = self.pop[self.r1].v[n] + self.F * (self.pop[self.r2].v[n] - self.pop[self.r3].v[n])
+                tmp.v[n] = c1.v[n] + self.F * (c2.v[n] - c3.v[n])
                 n = (n + 1) % self.D
                 l_v += 1
                 if not (rand_v() < self.CR and l_v < self.D):
                     break
         elif self.strategy == 3:
+            # Random used: 2
             while True:
-                tmp.v[n] = tmp.v[n] + self.F * (self.last_best.v[n] - tmp.v[n]) + self.F*(self.pop[self.r1].v[n] - self.pop[self.r2].v[n])
+                tmp.v[n] = tmp.v[n] + self.F * (self.last_best.v[n] - tmp.v[n]) + self.F * (c1.v[n] - c2.v[n])
                 n = (n + 1) % self.D
                 l_v += 1
                 if not (rand_v() < self.CR and l_v < self.D):
                     break
         elif self.strategy == 4:
+            # Random used: 4
+            c3 = self.pool[self.r3]
+            c4 = self.pool[self.r4]
             while True:
-                tmp.v[n] = self.last_best.v[n] + (self.pop[self.r1].v[n] + self.pop[self.r2].v[n] - self.pop[self.r3].v[n] - self.pop[self.r4].v[n]) * self.F
+                tmp.v[n] = self.last_best.v[n] + (c1.v[n] + c2.v[n] - c3.v[n] - c4.v[n]) * self.F
                 n = (n + 1) % self.D
                 l_v += 1
                 if not (rand_v() < self.CR and l_v < self.D):
                     break
         elif self.strategy == 5:
+            # Random used: 5
+            c3 = self.pool[self.r3]
+            c4 = self.pool[self.r4]
+            c5 = self.pool[self.r5]
             while True:
-                tmp.v[n] = self.pop[self.r5].v[n] + (self.pop[self.r1].v[n] + self.pop[self.r2].v[n] - self.pop[self.r3].v[n] - self.pop[self.r4].v[n]) * self.F
+                tmp.v[n] = c5.v[n] + (c1.v[n] + c2.v[n] - c3.v[n] - c4.v[n]) * self.F
                 n = (n + 1) % self.D
                 l_v += 1
                 if not (rand_v() < self.CR and l_v < self.D):
                     break
         elif self.strategy == 6:
+            # Random used: 2
             for l_v in range(self.D):
                 if rand_v() < self.CR or l_v == self.D - 1:
-                    tmp.v[n] = self.last_best.v[n] + self.F * (self.pop[self.r2].v[n] - self.pop[self.r3].v[n])
+                    tmp.v[n] = self.last_best.v[n] + self.F * (c1.v[n] - c2.v[n])
                 n = (n + 1) % self.D
         elif self.strategy == 7:
+            # Random used: 3
+            c3 = self.pool[self.r3]
             for l_v in range(self.D):
                 if rand_v() < self.CR or l_v == self.D - 1:
-                    tmp.v[n] = self.pop[self.r1].v[n] + self.F * (self.pop[self.r2].v[n] - self.pop[self.r3].v[n])
+                    tmp.v[n] = c1.v[n] + self.F * (c2.v[n] - c3.v[n])
                 n = (n + 1) % self.D
         elif self.strategy == 8:
+            # Random used: 2
             for l_v in range(self.D):
                 if rand_v() < self.CR or l_v == self.D - 1:
-                    tmp.v[n] = tmp.v[n] + self.F*(self.last_best.v[n] - tmp.v[n]) + self.F*(self.pop[self.r1].v[n] - self.pop[self.r2].v[n])
+                    tmp.v[n] = tmp.v[n] + self.F * (self.last_best.v[n] - tmp.v[n]) + self.F * (c1.v[n] - c2.v[n])
                 n = (n + 1) % self.D
         elif self.strategy == 9:
+            # Random used: 4
+            c3 = self.pool[self.r3]
+            c4 = self.pool[self.r4]
             for l_v in range(self.D):
                 if rand_v() < self.CR or l_v == self.D - 1:
-                    tmp.v[n] = self.last_best.v[n] + (self.pop[self.r1].v[n] + self.pop[self.r2].v[n] - self.pop[self.r3].v[n] - self.pop[self.r4].v[n]) * self.F
+                    tmp.v[n] = self.last_best.v[n] + (c1.v[n] + c2.v[n] - c3.v[n] - c4.v[n]) * self.F
                 n = (n + 1) % self.D
-        else:
+        elif self.strategy == 0:
+            # Random used: 5
+            c3 = self.pool[self.r3]
+            c4 = self.pool[self.r4]
+            c5 = self.pool[self.r5]
             for l_v in range(self.D):
                 if rand_v() < self.CR or l_v == self.D - 1:
-                    tmp.v[n] = self.pop[self.r5].v[n] + (self.pop[self.r1].v[n] + self.pop[self.r2].v[n] - self.pop[self.r3].v[n] - self.pop[self.r4].v[n]) * self.F
+                    tmp.v[n] = c5.v[n] + (c1.v[n] + c2.v[n] - c3.v[n] - c4.v[n]) * self.F
                 n = (n + 1) % self.D
         return tmp
 
@@ -273,9 +303,9 @@ cdef class Differential:
             # then evaluate the one
             tmp.f = self.func.fitness(tmp.v)
             # if temporary one is better than origin(fitness value is smaller)
-            if tmp.f <= self.pop[i].f:
+            baby = self.pool[i]
+            if tmp.f <= baby.f:
                 # copy the temporary one to origin member
-                baby = self.pop[i]
                 baby.assign(tmp)
                 # check the temporary one is better than the current_best
                 if tmp.f < self.current_best.f:

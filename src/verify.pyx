@@ -12,13 +12,21 @@ email: pyslvs@gmail.com
 from time import time
 from numpy import zeros as np_zeros
 cimport cython
-from libc.stdlib cimport rand, srand
+from libc.stdlib cimport rand, srand, RAND_MAX
+
 srand(int(time()))
 
 
 @cython.cdivision
 cdef inline double rand_v(double lower = 0., double upper = 1.) nogil:
-    return <double>rand() % (upper - lower + 1) + lower
+    """Random real value between [lower, upper]."""
+    return lower + rand() / <double>RAND_MAX * (upper - lower)
+
+
+@cython.cdivision
+cdef inline int rand_i(int upper) nogil:
+    """Random integer between [0, upper]."""
+    return rand() % upper
 
 
 @cython.final
