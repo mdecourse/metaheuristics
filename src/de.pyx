@@ -59,7 +59,7 @@ cdef class Differential:
         # object function, or environment
         self.func = func
 
-        # strategy 1~10, choice what strategy to generate new member in temporary
+        # strategy 0~9, choice what strategy to generate new member in temporary
         self.strategy = settings.get('strategy', 1)
         # population size
         # To start off NP = 10*D is a reasonable choice. Increase NP if misconvergence
