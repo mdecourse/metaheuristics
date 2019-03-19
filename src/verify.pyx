@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# cython: language_level=3, embedsignature=True
+# cython: language_level=3, embedsignature=True, cdivision=True
 
 """The callable class of the validation in algorithm.
 
@@ -17,13 +17,11 @@ from libc.stdlib cimport rand, srand, RAND_MAX
 srand(int(time()))
 
 
-@cython.cdivision
 cdef inline double rand_v(double lower = 0., double upper = 1.) nogil:
     """Random real value between [lower, upper]."""
     return lower + <double>rand() / RAND_MAX * (upper - lower)
 
 
-@cython.cdivision
 cdef inline int rand_i(int upper) nogil:
     """Random integer between [0, upper]."""
     return rand() % upper

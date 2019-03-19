@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# cython: language_level=3, embedsignature=True
+# cython: language_level=3, embedsignature=True, cdivision=True
 
 """Real-coded Genetic Algorithm.
 
@@ -162,7 +162,6 @@ cdef class Genetic:
             b1.assign(c1)
             b2.assign(c2)
 
-    @cython.cdivision
     cdef inline double delta(self, double y):
         cdef double r
         if self.max_gen > 0:
@@ -229,7 +228,6 @@ cdef class Genetic:
         baby = self.chromosome[rand_i(self.nPop)]
         baby.assign(self.last_best)
 
-    @cython.cdivision
     cdef inline void generation_process(self):
         self.gen += 1
 

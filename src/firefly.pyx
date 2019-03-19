@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# cython: language_level=3, embedsignature=True
+# cython: language_level=3, embedsignature=True, cdivision=True
 
 """Firefly Algorithm.
 
@@ -200,7 +200,6 @@ cdef class Firefly:
     cdef inline void report(self):
         self.fitness_time.append((self.gen, self.last_best.f, time() - self.time_start))
 
-    @cython.cdivision
     cdef inline void generation_process(self):
         self.gen += 1
 

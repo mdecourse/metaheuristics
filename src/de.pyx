@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# cython: language_level=3, embedsignature=True
+# cython: language_level=3, embedsignature=True, cdivision=True
 
 """Differential Evolution.
 
@@ -287,7 +287,6 @@ cdef class Differential:
                 return True
         return False
 
-    @cython.cdivision
     cdef inline void generation_process(self):
         self.gen += 1
 
