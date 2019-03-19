@@ -24,6 +24,8 @@ from verify cimport (
     Verification,
 )
 
+ctypedef void (*Eq)(Differential, int, Chromosome)
+
 
 @cython.final
 cdef class Differential:
@@ -182,98 +184,80 @@ cdef class Differential:
         while self.r5 in {i, self.r1, self.r2, self.r3, self.r4}:
             self.r5 = rand_i(self.NP)
 
+    cdef inline void type1(self, Chromosome tmp, Eq func):
+        cdef int n = rand_i(self.D)
+        cdef int l_v = 0
+        while True:
+            func(self, n, tmp)
+            n = (n + 1) % self.D
+            l_v += 1
+            if not (rand_v() < self.CR and l_v < self.D):
+                break
+
+    cdef inline void type2(self, Chromosome tmp, Eq func):
+        cdef int n = rand_i(self.D)
+        cdef int l_v
+        for l_v in range(self.D):
+            if rand_v() < self.CR or l_v == self.D - 1:
+                func(self, n, tmp)
+            n = (n + 1) % self.D
+
+    cdef void eq1(self, int n, Chromosome tmp):
+        cdef Chromosome c1 = self.pool[self.r1]
+        cdef Chromosome c2 = self.pool[self.r2]
+        tmp.v[n] = self.last_best.v[n] + self.F * (c1.v[n] - c2.v[n])
+
+    cdef void eq2(self, int n, Chromosome tmp):
+        cdef Chromosome c1 = self.pool[self.r1]
+        cdef Chromosome c2 = self.pool[self.r2]
+        cdef Chromosome c3 = self.pool[self.r3]
+        tmp.v[n] = c1.v[n] + self.F * (c2.v[n] - c3.v[n])
+
+    cdef void eq3(self, int n, Chromosome tmp):
+        cdef Chromosome c1 = self.pool[self.r1]
+        cdef Chromosome c2 = self.pool[self.r2]
+        tmp.v[n] = tmp.v[n] + self.F * (self.last_best.v[n] - tmp.v[n]) + self.F * (c1.v[n] - c2.v[n])
+
+    cdef void eq4(self, int n, Chromosome tmp):
+        cdef Chromosome c1 = self.pool[self.r1]
+        cdef Chromosome c2 = self.pool[self.r2]
+        cdef Chromosome c3 = self.pool[self.r3]
+        cdef Chromosome c4 = self.pool[self.r4]
+        tmp.v[n] = self.last_best.v[n] + (c1.v[n] + c2.v[n] - c3.v[n] - c4.v[n]) * self.F
+
+    cdef void eq5(self, int n, Chromosome tmp):
+        cdef Chromosome c1 = self.pool[self.r1]
+        cdef Chromosome c2 = self.pool[self.r2]
+        cdef Chromosome c3 = self.pool[self.r3]
+        cdef Chromosome c4 = self.pool[self.r4]
+        cdef Chromosome c5 = self.pool[self.r5]
+        tmp.v[n] = c5.v[n] + (c1.v[n] + c2.v[n] - c3.v[n] - c4.v[n]) * self.F
+
     cdef inline Chromosome recombination(self, int i):
         """use new vector, recombination the new one member to tmp."""
-        cdef Chromosome c1, c2, c3, c4, c5
         cdef Chromosome tmp = Chromosome.__new__(Chromosome, self.D)
         tmp.assign(self.pool[i])
 
-        cdef int n = rand_i(self.D)
-        cdef int l_v = 0
-        c1 = self.pool[self.r1]
-        c2 = self.pool[self.r2]
         if self.strategy == 1:
-            # Random used: 2
-            while True:
-                tmp.v[n] = self.last_best.v[n] + self.F * (c1.v[n] - c2.v[n])
-                n = (n + 1) % self.D
-                l_v += 1
-                if not (rand_v() < self.CR and l_v < self.D):
-                    break
+            self.type1(tmp, Differential.eq1)
         elif self.strategy == 2:
-            # Random used: 3
-            c3 = self.pool[self.r3]
-            while True:
-                tmp.v[n] = c1.v[n] + self.F * (c2.v[n] - c3.v[n])
-                n = (n + 1) % self.D
-                l_v += 1
-                if not (rand_v() < self.CR and l_v < self.D):
-                    break
+            self.type1(tmp, Differential.eq2)
         elif self.strategy == 3:
-            # Random used: 2
-            while True:
-                tmp.v[n] = tmp.v[n] + self.F * (self.last_best.v[n] - tmp.v[n]) + self.F * (c1.v[n] - c2.v[n])
-                n = (n + 1) % self.D
-                l_v += 1
-                if not (rand_v() < self.CR and l_v < self.D):
-                    break
+            self.type1(tmp, Differential.eq3)
         elif self.strategy == 4:
-            # Random used: 4
-            c3 = self.pool[self.r3]
-            c4 = self.pool[self.r4]
-            while True:
-                tmp.v[n] = self.last_best.v[n] + (c1.v[n] + c2.v[n] - c3.v[n] - c4.v[n]) * self.F
-                n = (n + 1) % self.D
-                l_v += 1
-                if not (rand_v() < self.CR and l_v < self.D):
-                    break
+            self.type1(tmp, Differential.eq4)
         elif self.strategy == 5:
-            # Random used: 5
-            c3 = self.pool[self.r3]
-            c4 = self.pool[self.r4]
-            c5 = self.pool[self.r5]
-            while True:
-                tmp.v[n] = c5.v[n] + (c1.v[n] + c2.v[n] - c3.v[n] - c4.v[n]) * self.F
-                n = (n + 1) % self.D
-                l_v += 1
-                if not (rand_v() < self.CR and l_v < self.D):
-                    break
+            self.type1(tmp, Differential.eq5)
         elif self.strategy == 6:
-            # Random used: 2
-            for l_v in range(self.D):
-                if rand_v() < self.CR or l_v == self.D - 1:
-                    tmp.v[n] = self.last_best.v[n] + self.F * (c1.v[n] - c2.v[n])
-                n = (n + 1) % self.D
+            self.type2(tmp, Differential.eq1)
         elif self.strategy == 7:
-            # Random used: 3
-            c3 = self.pool[self.r3]
-            for l_v in range(self.D):
-                if rand_v() < self.CR or l_v == self.D - 1:
-                    tmp.v[n] = c1.v[n] + self.F * (c2.v[n] - c3.v[n])
-                n = (n + 1) % self.D
+            self.type2(tmp, Differential.eq2)
         elif self.strategy == 8:
-            # Random used: 2
-            for l_v in range(self.D):
-                if rand_v() < self.CR or l_v == self.D - 1:
-                    tmp.v[n] = tmp.v[n] + self.F * (self.last_best.v[n] - tmp.v[n]) + self.F * (c1.v[n] - c2.v[n])
-                n = (n + 1) % self.D
+            self.type2(tmp, Differential.eq3)
         elif self.strategy == 9:
-            # Random used: 4
-            c3 = self.pool[self.r3]
-            c4 = self.pool[self.r4]
-            for l_v in range(self.D):
-                if rand_v() < self.CR or l_v == self.D - 1:
-                    tmp.v[n] = self.last_best.v[n] + (c1.v[n] + c2.v[n] - c3.v[n] - c4.v[n]) * self.F
-                n = (n + 1) % self.D
+            self.type2(tmp, Differential.eq4)
         elif self.strategy == 0:
-            # Random used: 5
-            c3 = self.pool[self.r3]
-            c4 = self.pool[self.r4]
-            c5 = self.pool[self.r5]
-            for l_v in range(self.D):
-                if rand_v() < self.CR or l_v == self.D - 1:
-                    tmp.v[n] = c5.v[n] + (c1.v[n] + c2.v[n] - c3.v[n] - c4.v[n]) * self.F
-                n = (n + 1) % self.D
+            self.type2(tmp, Differential.eq5)
         return tmp
 
     cdef inline void report(self):
