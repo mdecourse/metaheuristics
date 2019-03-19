@@ -36,7 +36,7 @@ cdef class Genetic:
     cdef Verification func
     cdef object progress_fun, interrupt_fun
     cdef ndarray chromosome, new_chromosome, ub, lb
-    cdef Chromosome current_best
+    cdef Chromosome last_best
     cdef list fitness_time
 
     def __cinit__(
@@ -79,6 +79,8 @@ cdef class Genetic:
         else:
             raise ValueError("please give 'max_gen', 'min_fit' or 'max_time' limit")
         self.rpt = settings.get('report', 0)
+        if self.rpt <= 0:
+            self.rpt = 10
         self.progress_fun = progress_fun
         self.interrupt_fun = interrupt_fun
 
@@ -98,7 +100,7 @@ cdef class Genetic:
         for i in range(self.nPop):
             self.new_chromosome[i] = Chromosome.__new__(Chromosome, self.nParm)
 
-        self.current_best = Chromosome.__new__(Chromosome, self.nParm)
+        self.last_best = Chromosome.__new__(Chromosome, self.nParm)
 
         # generations
         self.gen = 0
@@ -123,7 +125,7 @@ cdef class Genetic:
 
         tmp = self.chromosome[0]
         tmp.f = self.func.fitness(tmp.v)
-        self.current_best.assign(tmp)
+        self.last_best.assign(tmp)
 
     cdef inline void cross_over(self):
         cdef Chromosome c1 = Chromosome.__new__(Chromosome, self.nParm)
@@ -183,8 +185,8 @@ cdef class Genetic:
             if tmp.f < f:
                 index = i
                 f = tmp.f
-        if f < self.current_best.f:
-            self.current_best.assign(self.chromosome[index])
+        if f < self.last_best.f:
+            self.last_best.assign(self.chromosome[index])
 
     cdef inline void mutate(self):
         cdef int i, s
@@ -200,7 +202,7 @@ cdef class Genetic:
                 tmp.v[s] -= self.delta(tmp.v[s] - self.lb[s])
 
     cdef inline void report(self):
-        self.fitness_time.append((self.gen, self.current_best.f, time() - self.time_start))
+        self.fitness_time.append((self.gen, self.last_best.f, time() - self.time_start))
 
     cdef inline void select(self):
         """
@@ -225,19 +227,18 @@ cdef class Genetic:
             baby.assign(self.new_chromosome[i])
         # select random one chromosome to be best chromosome, make best chromosome still exist
         baby = self.chromosome[rand_i(self.nPop)]
-        baby.assign(self.current_best)
+        baby.assign(self.last_best)
 
+    @cython.cdivision
     cdef inline void generation_process(self):
+        self.gen += 1
+
         self.select()
         self.cross_over()
         self.mutate()
         self.fitness()
-        if self.rpt:
-            if self.gen % self.rpt == 0:
-                self.report()
-        else:
-            if self.gen % 10 == 0:
-                self.report()
+        if self.gen % self.rpt == 0:
+            self.report()
 
     cpdef tuple run(self):
         """Init and run GA for max_gen times."""
@@ -247,14 +248,13 @@ cdef class Genetic:
         self.report()
 
         while True:
-            self.gen += 1
             self.generation_process()
 
             if self.option == MAX_GEN:
                 if self.gen >= self.max_gen > 0:
                     break
             elif self.option == MIN_FIT:
-                if self.current_best.f <= self.min_fit:
+                if self.last_best.f <= self.min_fit:
                     break
             elif self.option == MAX_TIME:
                 if time() - self.time_start >= self.max_time > 0:
@@ -262,11 +262,11 @@ cdef class Genetic:
 
             # progress
             if self.progress_fun is not None:
-                self.progress_fun(self.gen, f"{self.current_best.f:.04f}")
+                self.progress_fun(self.gen, f"{self.last_best.f:.04f}")
 
             # interrupt
             if self.interrupt_fun is not None and self.interrupt_fun():
                 break
 
         self.report()
-        return self.func.result(self.current_best.v), self.fitness_time
+        return self.func.result(self.last_best.v), self.fitness_time

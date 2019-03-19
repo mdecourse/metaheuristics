@@ -20,7 +20,7 @@ srand(int(time()))
 @cython.cdivision
 cdef inline double rand_v(double lower = 0., double upper = 1.) nogil:
     """Random real value between [lower, upper]."""
-    return lower + rand() / <double>RAND_MAX * (upper - lower)
+    return lower + <double>rand() / RAND_MAX * (upper - lower)
 
 
 @cython.cdivision

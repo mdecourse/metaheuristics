@@ -51,7 +51,7 @@ cdef class Firefly:
     cdef Verification func
     cdef object progress_fun, interrupt_fun
     cdef ndarray lb, ub, fireflies
-    cdef Chromosome last_best, current_best
+    cdef Chromosome last_best
     cdef list fitness_time
 
     def __cinit__(
@@ -114,6 +114,8 @@ cdef class Firefly:
             raise ValueError("please give 'max_gen', 'min_fit' or 'max_time' limit")
         # Report function
         self.rpt = settings.get('report', 0)
+        if self.rpt <= 0:
+            self.rpt = 10
         self.progress_fun = progress_fun
         self.interrupt_fun = interrupt_fun
 
@@ -125,8 +127,6 @@ cdef class Firefly:
 
         # generation of current
         self.gen = 0
-        # best firefly of geneation
-        self.current_best = Chromosome.__new__(Chromosome, self.D)
         # best firefly so far
         self.last_best = Chromosome.__new__(Chromosome, self.D)
 
@@ -200,24 +200,23 @@ cdef class Firefly:
     cdef inline void report(self):
         self.fitness_time.append((self.gen, self.last_best.f, time() - self.time_start))
 
+    @cython.cdivision
     cdef inline void generation_process(self):
+        self.gen += 1
+
         self.move_fireflies()
         self.evaluate()
         # adjust alpha, depend on fitness value
         # if fitness value is larger, then alpha should larger
         # if fitness value is small, then alpha should smaller
-        self.current_best.assign(self.find_firefly())
-        if self.last_best.f > self.current_best.f:
-            self.last_best.assign(self.current_best)
+        cdef Chromosome current_best = self.find_firefly()
+        if self.last_best.f > current_best.f:
+            self.last_best.assign(current_best)
 
-        self.alpha = self.alpha0 * log10(self.current_best.f + 1)
+        self.alpha = self.alpha0 * log10(current_best.f + 1)
 
-        if self.rpt:
-            if self.gen % self.rpt == 0:
-                self.report()
-        else:
-            if self.gen % 10 == 0:
-                self.report()
+        if self.gen % self.rpt == 0:
+            self.report()
 
     cpdef tuple run(self):
         self.time_start = time()
@@ -227,7 +226,6 @@ cdef class Firefly:
         self.report()
 
         while True:
-            self.gen += 1
             self.generation_process()
 
             if self.option == MAX_GEN:

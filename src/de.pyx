@@ -36,7 +36,7 @@ cdef class Differential:
     cdef ndarray lb, ub, pool
     cdef Verification func
     cdef object progress_fun, interrupt_fun
-    cdef Chromosome last_best, current_best
+    cdef Chromosome last_best
     cdef list fitness_time
 
     def __cinit__(
@@ -95,6 +95,8 @@ cdef class Differential:
             raise ValueError("please give 'max_gen', 'min_fit' or 'max_time' limit")
         # Report function
         self.rpt = settings.get('report', 0)
+        if self.rpt <= 0:
+            self.rpt = 10
         self.progress_fun = progress_fun
         self.interrupt_fun = interrupt_fun
 
@@ -109,8 +111,6 @@ cdef class Differential:
 
         # last generation best member
         self.last_best = Chromosome.__new__(Chromosome, self.D)
-        # current best member
-        self.current_best = Chromosome.__new__(Chromosome, self.D)
 
         # the generation count
         self.gen = 0
@@ -287,7 +287,10 @@ cdef class Differential:
                 return True
         return False
 
+    @cython.cdivision
     cdef inline void generation_process(self):
+        self.gen += 1
+
         cdef int i
         cdef Chromosome tmp, baby
         for i in range(self.NP):
@@ -299,7 +302,7 @@ cdef class Differential:
             if self.over_bound(tmp):
                 # if it is, then abandon it
                 continue
-            # is not out of bound, that mean it's qualify of enviorment
+            # is not out of bound, that mean it's qualify of environment
             # then evaluate the one
             tmp.f = self.func.fitness(tmp.v)
             # if temporary one is better than origin(fitness value is smaller)
@@ -308,18 +311,12 @@ cdef class Differential:
                 # copy the temporary one to origin member
                 baby.assign(tmp)
                 # check the temporary one is better than the current_best
-                if tmp.f < self.current_best.f:
+                if tmp.f < self.last_best.f:
                     # copy the temporary one to current_best
-                    self.current_best.assign(tmp)
-        # copy the current_best to last_best
-        self.last_best.assign(self.current_best)
-        # if report generation is set, report
-        if self.rpt:
-            if self.gen % self.rpt == 0:
-                self.report()
-        else:
-            if self.gen % 10 == 0:
-                self.report()
+                    self.last_best.assign(tmp)
+
+        if self.gen % self.rpt == 0:
+            self.report()
 
     cpdef tuple run(self):
         """Run the algorithm."""
@@ -330,14 +327,11 @@ cdef class Differential:
         cdef Chromosome tmp = self.find_best()
         # copy to last_best
         self.last_best.assign(tmp)
-        # copy to current_best
-        self.current_best.assign(tmp)
         # report status
         self.report()
 
         # the evolution journey is begin ...
         while True:
-            self.gen += 1
             self.generation_process()
 
             if self.option == MAX_GEN:
