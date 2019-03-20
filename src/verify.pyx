@@ -10,7 +10,7 @@ email: pyslvs@gmail.com
 """
 
 from time import time
-from numpy import zeros as np_zeros
+from numpy import zeros
 cimport cython
 from libc.stdlib cimport rand, srand, RAND_MAX
 
@@ -35,8 +35,8 @@ cdef class Chromosome:
 
     def __cinit__(self, n: cython.int):
         self.n = n if n > 0 else 2
-        self.f = 0.0
-        self.v = np_zeros(n)
+        self.f = 0.
+        self.v = zeros(n)
 
     cdef void assign(self, Chromosome other):
         if other is self:

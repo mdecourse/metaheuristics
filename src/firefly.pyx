@@ -146,6 +146,7 @@ cdef class Firefly:
     cdef inline void move_fireflies(self):
         cdef int i, j
         cdef bint is_move
+        cdef double scale, tmp_v
         cdef Chromosome tmp
         for i in range(self.n):
             is_move = False
@@ -156,8 +157,8 @@ cdef class Firefly:
                 continue
             for j in range(self.D):
                 scale = self.ub[j] - self.lb[j]
-                tmp.v[j] += self.alpha * scale * rand_v(-0.5, 0.5)
-                tmp.v[j] = self.check(j, tmp.v[j])
+                tmp_v = tmp.v[j] + self.alpha * scale * rand_v(-0.5, 0.5)
+                tmp.v[j] = self.check(j, tmp_v)
 
     cdef inline void evaluate(self):
         cdef Chromosome firefly
@@ -170,10 +171,11 @@ cdef class Firefly:
         cdef double r = _distance(me, she)
         cdef double beta = (self.beta0 - self.beta_min) * exp(-self.gamma * r * r) + self.beta_min
         cdef int i
+        cdef double scale, me_v
         for i in range(me.n):
             scale = self.ub[i] - self.lb[i]
-            me.v[i] += beta * (she.v[i] - me.v[i]) + self.alpha * scale * rand_v(-0.5, 0.5)
-            me.v[i] = self.check(i, me.v[i])
+            me_v = me.v[i] + beta * (she.v[i] - me.v[i]) + self.alpha * scale * rand_v(-0.5, 0.5)
+            me.v[i] = self.check(i, me_v)
         return True
 
     cdef inline double check(self, int i, double v):
