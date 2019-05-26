@@ -13,7 +13,7 @@ from time import time
 from libc.math cimport pow, HUGE_VAL
 cimport cython
 from numpy cimport ndarray
-from verify cimport (
+from .verify cimport (
     Limit,
     MAX_GEN,
     MIN_FIT,

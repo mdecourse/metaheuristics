@@ -18,7 +18,7 @@ from libc.math cimport (
     HUGE_VAL,
 )
 from numpy cimport ndarray
-from verify cimport (
+from .verify cimport (
     Limit,
     MAX_GEN,
     MIN_FIT,

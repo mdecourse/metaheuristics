@@ -12,7 +12,7 @@ np_include = numpy.get_include()
 
 
 sources = []
-for place in ["src/"]:
+for place in ["."]:
     for source in listdir(place):
         if source.endswith('.pyx'):
             sources.append(place + source)
