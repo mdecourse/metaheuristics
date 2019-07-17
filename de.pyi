@@ -24,12 +24,11 @@ class Differential:
     ):
         """
         settings = {
-            'nPop',
-            'pCross',
-            'pMute',
-            'pWin',
-            'bDelta',
-            'max_gen' or 'min_fit' or 'max_time',
+            'strategy',
+            'NP',
+            'F',
+            'CR',
+            'max_gen', 'min_fit' or 'max_time',
             'report'
         }
         """
