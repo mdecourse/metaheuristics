@@ -147,7 +147,7 @@ cdef class AlgorithmBase:
             if self.gen % self.rpt == 0:
                 self.report()
             if self.stop_at == MAX_GEN:
-                if self.gen >= self.stop_at_i:
+                if self.gen >= self.stop_at_i > 0:
                     break
             elif self.stop_at == MIN_FIT:
                 if self.last_best.f <= self.stop_at_f:
