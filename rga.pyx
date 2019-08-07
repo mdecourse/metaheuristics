@@ -9,35 +9,26 @@ license: AGPL
 email: pyslvs@gmail.com
 """
 
-from time import time
 from libc.math cimport pow, HUGE_VAL
 cimport cython
 from numpy cimport ndarray
 from .verify cimport (
-    Limit,
-    MAX_GEN,
-    MIN_FIT,
-    MAX_TIME,
     rand_v,
     rand_i,
     Chromosome,
     Verification,
+    AlgorithmBase,
 )
 
 
 @cython.final
-cdef class Genetic:
+cdef class Genetic(AlgorithmBase):
 
     """Algorithm class."""
 
-    cdef Limit option
-    cdef int nParm, nPop, max_gen, max_time, gen, rpt
-    cdef double pCross, pMute, pWin, bDelta, min_fit, time_start
-    cdef Verification func
-    cdef object progress_fun, interrupt_fun
-    cdef ndarray chromosome, new_chromosome, ub, lb
-    cdef Chromosome last_best
-    cdef list fitness_time
+    cdef int nParm, nPop
+    cdef double pCross, pMute, pWin, bDelta
+    cdef ndarray chromosome, new_chromosome
 
     def __cinit__(
         self,
@@ -57,39 +48,11 @@ cdef class Genetic:
             'report'
         }
         """
-        self.func = func
-
         self.nPop = settings.get('nPop', 500)
         self.pCross = settings.get('pCross', 0.95)
         self.pMute = settings.get('pMute', 0.05)
         self.pWin = settings.get('pWin', 0.95)
         self.bDelta = settings.get('bDelta', 5.)
-        self.max_gen = 0
-        self.min_fit = 0
-        self.max_time = 0
-        if 'max_gen' in settings:
-            self.option = MAX_GEN
-            self.max_gen = settings['max_gen']
-        elif 'min_fit' in settings:
-            self.option = MIN_FIT
-            self.min_fit = settings['min_fit']
-        elif 'max_time' in settings:
-            self.option = MAX_TIME
-            self.max_time = settings['max_time']
-        else:
-            raise ValueError("please give 'max_gen', 'min_fit' or 'max_time' limit")
-        self.rpt = settings.get('report', 0)
-        if self.rpt <= 0:
-            self.rpt = 10
-        self.progress_fun = progress_fun
-        self.interrupt_fun = interrupt_fun
-
-        # low bound
-        self.lb = self.func.get_lower()
-        # up bound
-        self.ub = self.func.get_upper()
-        if len(self.lb) != len(self.ub):
-            raise ValueError("length of upper and lower bounds must be equal")
         self.nParm = len(self.lb)
 
         self.chromosome = ndarray(self.nPop, dtype=object)
@@ -99,15 +62,7 @@ cdef class Genetic:
             self.chromosome[i] = Chromosome.__new__(Chromosome, self.nParm)
         for i in range(self.nPop):
             self.new_chromosome[i] = Chromosome.__new__(Chromosome, self.nParm)
-
         self.last_best = Chromosome.__new__(Chromosome, self.nParm)
-
-        # generations
-        self.gen = 0
-
-        # setup benchmark
-        self.time_start = -1
-        self.fitness_time = []
 
     cdef inline double check(self, int i, double v):
         """If a variable is out of bound, replace it with a random value."""
@@ -126,6 +81,8 @@ cdef class Genetic:
         tmp = self.chromosome[0]
         tmp.f = self.func.fitness(tmp.v)
         self.last_best.assign(tmp)
+        self.fitness()
+        self.report()
 
     cdef inline void cross_over(self):
         cdef Chromosome c1 = Chromosome.__new__(Chromosome, self.nParm)
@@ -200,13 +157,8 @@ cdef class Genetic:
             else:
                 tmp.v[s] -= self.delta(tmp.v[s] - self.lb[s])
 
-    cdef inline void report(self):
-        self.fitness_time.append((self.gen, self.last_best.f, time() - self.time_start))
-
     cdef inline void select(self):
-        """
-        roulette wheel selection
-        """
+        """roulette wheel selection"""
         cdef int i, j, k
         cdef Chromosome baby, b1, b2
         for i in range(self.nPop):
@@ -229,42 +181,7 @@ cdef class Genetic:
         baby.assign(self.last_best)
 
     cdef inline void generation_process(self):
-        self.gen += 1
-
         self.select()
         self.cross_over()
         self.mutate()
         self.fitness()
-        if self.gen % self.rpt == 0:
-            self.report()
-
-    cpdef tuple run(self):
-        """Init and run GA for max_gen times."""
-        self.time_start = time()
-        self.initialize()
-        self.fitness()
-        self.report()
-
-        while True:
-            self.generation_process()
-
-            if self.option == MAX_GEN:
-                if self.gen >= self.max_gen > 0:
-                    break
-            elif self.option == MIN_FIT:
-                if self.last_best.f <= self.min_fit:
-                    break
-            elif self.option == MAX_TIME:
-                if time() - self.time_start >= self.max_time > 0:
-                    break
-
-            # progress
-            if self.progress_fun is not None:
-                self.progress_fun(self.gen, f"{self.last_best.f:.04f}")
-
-            # interrupt
-            if self.interrupt_fun is not None and self.interrupt_fun():
-                break
-
-        self.report()
-        return self.func.result(self.last_best.v), self.fitness_time

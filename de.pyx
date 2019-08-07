@@ -9,37 +9,28 @@ license: AGPL
 email: pyslvs@gmail.com
 """
 
-from time import time
 cimport cython
 from libc.math cimport HUGE_VAL
 from numpy cimport ndarray
 from .verify cimport (
-    Limit,
-    MAX_GEN,
-    MIN_FIT,
-    MAX_TIME,
     rand_v,
     rand_i,
     Chromosome,
     Verification,
+    AlgorithmBase,
 )
 
 ctypedef void (*Eq)(Differential, int, Chromosome)
 
 
 @cython.final
-cdef class Differential:
+cdef class Differential(AlgorithmBase):
 
     """Algorithm class."""
 
-    cdef Limit option
-    cdef int strategy, D, NP, max_gen, max_time, rpt, gen, r1, r2, r3, r4, r5
-    cdef double F, CR, min_fit, time_start
-    cdef ndarray lb, ub, pool
-    cdef Verification func
-    cdef object progress_fun, interrupt_fun
-    cdef Chromosome last_best
-    cdef list fitness_time
+    cdef int strategy, D, NP, r1, r2, r3, r4, r5
+    cdef double F, CR
+    cdef ndarray pool
 
     def __cinit__(
         self,
@@ -58,9 +49,6 @@ cdef class Differential:
             'report'
         }
         """
-        # object function, or environment
-        self.func = func
-
         # strategy 0~9, choice what strategy to generate new member in temporary
         self.strategy = settings.get('strategy', 1)
         # population size
@@ -72,57 +60,20 @@ cdef class Differential:
         # crossover possible
         # CR in [0,1]
         self.CR = settings.get('CR', 0.9)
-        # low bound
-        self.lb = self.func.get_lower()
-        # up bound
-        self.ub = self.func.get_upper()
-        if len(self.lb) != len(self.ub):
-            raise ValueError("length of upper and lower bounds must be equal")
         # dimension of question
         self.D = len(self.lb)
-        # Algorithm will stop when the limitation has happened.
-        self.max_gen = 0
-        self.min_fit = 0
-        self.max_time = 0
-        if 'max_gen' in settings:
-            self.option = MAX_GEN
-            self.max_gen = settings['max_gen']
-        elif 'min_fit' in settings:
-            self.option = MIN_FIT
-            self.min_fit = settings['min_fit']
-        elif 'max_time' in settings:
-            self.option = MAX_TIME
-            self.max_time = settings['max_time']
-        else:
-            raise ValueError("please give 'max_gen', 'min_fit' or 'max_time' limit")
-        # Report function
-        self.rpt = settings.get('report', 0)
-        if self.rpt <= 0:
-            self.rpt = 10
-        self.progress_fun = progress_fun
-        self.interrupt_fun = interrupt_fun
-
         # check parameter is set properly
         self.check_parameter()
+
+        # the vector
+        self.r1 = self.r2 = self.r3 = self.r4 = self.r5 = 0
 
         # generation pool, depend on population size
         self.pool = ndarray(self.NP, dtype=object)
         cdef int i
         for i in range(self.NP):
             self.pool[i] = Chromosome.__new__(Chromosome, self.D)
-
-        # last generation best member
         self.last_best = Chromosome.__new__(Chromosome, self.D)
-
-        # the generation count
-        self.gen = 0
-
-        # the vector
-        self.r1 = self.r2 = self.r3 = self.r4 = self.r5 = 0
-
-        # setup benchmark
-        self.time_start = -1
-        self.fitness_time = []
 
     cdef inline void check_parameter(self):
         """Check parameter is set properly."""
@@ -144,6 +95,9 @@ cdef class Differential:
             for j in range(self.D):
                 tmp.v[j] = rand_v(self.lb[j], self.ub[j])
             tmp.f = self.func.fitness(tmp.v)
+
+        self.last_best.assign(self.find_best())
+        self.report()
 
     cdef inline Chromosome find_best(self):
         """Find member that have minimum fitness value from pool."""
@@ -260,9 +214,6 @@ cdef class Differential:
             self.type2(tmp, Differential.eq5)
         return tmp
 
-    cdef inline void report(self):
-        self.fitness_time.append((self.gen, self.last_best.f, time() - self.time_start))
-
     cdef inline bint over_bound(self, Chromosome member):
         """check the member's chromosome that is out of bound?"""
         cdef int i
@@ -272,8 +223,6 @@ cdef class Differential:
         return False
 
     cdef inline void generation_process(self):
-        self.gen += 1
-
         cdef int i
         cdef Chromosome tmp, baby
         for i in range(self.NP):
@@ -297,44 +246,3 @@ cdef class Differential:
                 if tmp.f < self.last_best.f:
                     # copy the temporary one to current_best
                     self.last_best.assign(tmp)
-
-        if self.gen % self.rpt == 0:
-            self.report()
-
-    cpdef tuple run(self):
-        """Run the algorithm."""
-        self.time_start = time()
-        # initialize the member's chromosome
-        self.initialize()
-        # find the best one (smallest fitness value)
-        cdef Chromosome tmp = self.find_best()
-        # copy to last_best
-        self.last_best.assign(tmp)
-        # report status
-        self.report()
-
-        # the evolution journey is begin ...
-        while True:
-            self.generation_process()
-
-            if self.option == MAX_GEN:
-                if self.gen >= self.max_gen > 0:
-                    break
-            elif self.option == MIN_FIT:
-                if self.last_best.f <= self.min_fit:
-                    break
-            elif self.option == MAX_TIME:
-                if time() - self.time_start >= self.max_time > 0:
-                    break
-
-            # progress
-            if self.progress_fun is not None:
-                self.progress_fun(self.gen, f"{self.last_best.f:.04f}")
-
-            # interrupt
-            if self.interrupt_fun is not None and self.interrupt_fun():
-                break
-
-        # the evolution journey is done, report the final status
-        self.report()
-        return self.func.result(self.last_best.v), self.fitness_time

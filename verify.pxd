@@ -2,6 +2,7 @@
 # cython: language_level=3
 
 """The callable class of the validation in algorithm.
+The 'verify' module should be loaded when using sub-class.
 
 author: Yuan Chang
 copyright: Copyright (C) 2016-2019
@@ -34,3 +35,20 @@ cdef class Verification:
     cdef ndarray[double, ndim=1] get_lower(self)
     cdef double fitness(self, ndarray[double, ndim=1] v)
     cpdef object result(self, ndarray[double, ndim=1] v)
+
+
+cdef class AlgorithmBase:
+
+    cdef int max_gen, max_time, gen, rpt
+    cdef double min_fit, time_start
+    cdef Limit option
+    cdef Verification func
+    cdef Chromosome last_best
+    cdef list fitness_time
+    cdef double[:] lb, ub
+    cdef object progress_fun, interrupt_fun
+
+    cdef void initialize(self)
+    cdef void generation_process(self)
+    cdef void report(self)
+    cpdef tuple run(self)

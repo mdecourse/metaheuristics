@@ -9,7 +9,6 @@ license: AGPL
 email: pyslvs@gmail.com
 """
 
-from time import time
 cimport cython
 from libc.math cimport (
     exp,
@@ -19,13 +18,10 @@ from libc.math cimport (
 )
 from numpy cimport ndarray
 from .verify cimport (
-    Limit,
-    MAX_GEN,
-    MIN_FIT,
-    MAX_TIME,
     rand_v,
     Chromosome,
     Verification,
+    AlgorithmBase,
 )
 
 
@@ -41,18 +37,13 @@ cdef inline double _distance(Chromosome me, Chromosome she):
 
 
 @cython.final
-cdef class Firefly:
+cdef class Firefly(AlgorithmBase):
 
     """Algorithm class."""
 
-    cdef Limit option
-    cdef int D, n, max_gen, max_time, rpt, gen
-    cdef double alpha, alpha0, beta_min, beta0, gamma, min_fit, time_start
-    cdef Verification func
-    cdef object progress_fun, interrupt_fun
-    cdef ndarray lb, ub, fireflies
-    cdef Chromosome last_best
-    cdef list fitness_time
+    cdef int D, n
+    cdef double alpha, alpha0, beta_min, beta0, gamma
+    cdef ndarray fireflies
 
     def __cinit__(
         self,
@@ -72,9 +63,6 @@ cdef class Firefly:
             'report'
         }
         """
-        # object function
-        self.func = func
-
         # n, the population size of fireflies
         self.n = settings.get('n', 80)
         # alpha, the step size
@@ -87,52 +75,15 @@ cdef class Firefly:
         self.beta0 = settings.get('beta0', 1.)
         # gamma
         self.gamma = settings.get('gamma', 1.)
-
-        # low bound
-        self.lb = self.func.get_lower()
-        # up bound
-        self.ub = self.func.get_upper()
-        if len(self.lb) != len(self.ub):
-            raise ValueError("length of upper and lower bounds must be equal")
         # D, the dimension of question and each firefly will random place position in this landscape
         self.D = len(self.lb)
-
-        # Algorithm will stop when the limitation has happened.
-        self.max_gen = 0
-        self.min_fit = 0
-        self.max_time = 0
-        if 'max_gen' in settings:
-            self.option = MAX_GEN
-            self.max_gen = settings['max_gen']
-        elif 'min_fit' in settings:
-            self.option = MIN_FIT
-            self.min_fit = settings['min_fit']
-        elif 'max_time' in settings:
-            self.option = MAX_TIME
-            self.max_time = settings['max_time']
-        else:
-            raise ValueError("please give 'max_gen', 'min_fit' or 'max_time' limit")
-        # Report function
-        self.rpt = settings.get('report', 0)
-        if self.rpt <= 0:
-            self.rpt = 10
-        self.progress_fun = progress_fun
-        self.interrupt_fun = interrupt_fun
 
         # all fireflies, depend on population n
         self.fireflies = ndarray(self.n, dtype=object)
         cdef int i
         for i in range(self.n):
             self.fireflies[i] = Chromosome.__new__(Chromosome, self.D)
-
-        # generation of current
-        self.gen = 0
-        # best firefly so far
         self.last_best = Chromosome.__new__(Chromosome, self.D)
-
-        # setup benchmark
-        self.time_start = -1
-        self.fitness_time = []
 
     cdef inline void initialize(self):
         cdef int i, j
@@ -142,6 +93,10 @@ cdef class Firefly:
             tmp = self.fireflies[i]
             for j in range(self.D):
                 tmp.v[j] = rand_v(self.lb[j], self.ub[j])
+
+        self.evaluate()
+        self.last_best.assign(self.fireflies[0])
+        self.report()
 
     cdef inline void move_fireflies(self):
         cdef int i
@@ -200,12 +155,7 @@ cdef class Firefly:
                 f = tmp.f
         return self.fireflies[index]
 
-    cdef inline void report(self):
-        self.fitness_time.append((self.gen, self.last_best.f, time() - self.time_start))
-
     cdef inline void generation_process(self):
-        self.gen += 1
-
         self.move_fireflies()
         self.evaluate()
         # adjust alpha, depend on fitness value
@@ -216,37 +166,3 @@ cdef class Firefly:
             self.last_best.assign(current_best)
 
         self.alpha = self.alpha0 * log10(current_best.f + 1)
-
-        if self.gen % self.rpt == 0:
-            self.report()
-
-    cpdef tuple run(self):
-        self.time_start = time()
-        self.initialize()
-        self.evaluate()
-        self.last_best.assign(self.fireflies[0])
-        self.report()
-
-        while True:
-            self.generation_process()
-
-            if self.option == MAX_GEN:
-                if self.gen >= self.max_gen > 0:
-                    break
-            elif self.option == MIN_FIT:
-                if self.last_best.f <= self.min_fit:
-                    break
-            elif self.option == MAX_TIME:
-                if time() - self.time_start >= self.max_time > 0:
-                    break
-
-            # progress
-            if self.progress_fun is not None:
-                self.progress_fun(self.gen, f"{self.last_best.f:.04f}")
-
-            # interrupt
-            if self.interrupt_fun is not None and self.interrupt_fun():
-                break
-
-        self.report()
-        return self.func.result(self.last_best.v), self.fitness_time
