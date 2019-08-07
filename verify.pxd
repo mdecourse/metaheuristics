@@ -13,10 +13,11 @@ email: pyslvs@gmail.com
 from numpy cimport ndarray
 
 
-cdef enum Limit:
+cdef enum stop_option:
     MAX_GEN
     MIN_FIT
     MAX_TIME
+    SLOW_DOWN
 
 
 cdef double rand_v(double lower = *, double upper = *) nogil
@@ -24,7 +25,7 @@ cdef int rand_i(int upper) nogil
 
 
 cdef class Chromosome:
-    cdef int n
+    cdef unsigned int n
     cdef double f
     cdef ndarray v
     cdef void assign(self, Chromosome obj)
@@ -39,9 +40,9 @@ cdef class Verification:
 
 cdef class AlgorithmBase:
 
-    cdef int max_gen, max_time, gen, rpt
-    cdef double min_fit, time_start
-    cdef Limit option
+    cdef unsigned int stop_at_i, gen, rpt
+    cdef double stop_at_f, time_start
+    cdef stop_option stop_at
     cdef Verification func
     cdef Chromosome last_best
     cdef list fitness_time

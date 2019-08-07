@@ -96,7 +96,6 @@ cdef class Firefly(AlgorithmBase):
 
         self.evaluate()
         self.last_best.assign(self.fireflies[0])
-        self.report()
 
     cdef inline void move_fireflies(self):
         cdef int i

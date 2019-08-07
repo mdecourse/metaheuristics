@@ -97,7 +97,6 @@ cdef class Differential(AlgorithmBase):
             tmp.f = self.func.fitness(tmp.v)
 
         self.last_best.assign(self.find_best())
-        self.report()
 
     cdef inline Chromosome find_best(self):
         """Find member that have minimum fitness value from pool."""

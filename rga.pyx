@@ -13,6 +13,7 @@ from libc.math cimport pow, HUGE_VAL
 cimport cython
 from numpy cimport ndarray
 from .verify cimport (
+    MAX_GEN,
     rand_v,
     rand_i,
     Chromosome,
@@ -82,7 +83,6 @@ cdef class Genetic(AlgorithmBase):
         tmp.f = self.func.fitness(tmp.v)
         self.last_best.assign(tmp)
         self.fitness()
-        self.report()
 
     cdef inline void cross_over(self):
         cdef Chromosome c1 = Chromosome.__new__(Chromosome, self.nParm)
@@ -121,8 +121,8 @@ cdef class Genetic(AlgorithmBase):
 
     cdef inline double delta(self, double y):
         cdef double r
-        if self.max_gen > 0:
-            r = <double>self.gen / self.max_gen
+        if self.stop_at == MAX_GEN and self.stop_at_i > 0:
+            r = <double>self.gen / self.stop_at_i
         else:
             r = 1
         return y * rand_v() * pow(1.0 - r, self.bDelta)
