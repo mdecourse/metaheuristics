@@ -101,7 +101,7 @@ cdef class AlgorithmBase:
             self.stop_at_f = settings['max_time']
         elif 'slow_down' in settings:
             self.stop_at = SLOW_DOWN
-            self.stop_at_f = settings['slow_down']
+            self.stop_at_f = 1 - settings['slow_down']
         else:
             raise ValueError("please give 'max_gen', 'min_fit' or 'max_time' limit")
         self.rpt = settings.get('report', 0)
@@ -157,7 +157,7 @@ cdef class AlgorithmBase:
                     break
             elif self.stop_at == SLOW_DOWN:
                 diff = last_best - self.last_best.f
-                if last_diff > 0 and diff / last_diff < self.stop_at_f:
+                if last_diff > 0 and diff / last_diff >= self.stop_at_f:
                     break
                 last_diff = diff
             # progress
