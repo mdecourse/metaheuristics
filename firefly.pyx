@@ -28,7 +28,7 @@ from .verify cimport (
 cdef inline double _distance(Chromosome me, Chromosome she):
     """Distance of two fireflies."""
     cdef double dist = 0
-    cdef int i
+    cdef unsigned int i
     cdef double diff
     for i in range(me.n):
         diff = me.v[i] - she.v[i]
@@ -41,7 +41,7 @@ cdef class Firefly(AlgorithmBase):
 
     """Algorithm class."""
 
-    cdef int D, n
+    cdef unsigned int D, n
     cdef double alpha, alpha0, beta_min, beta0, gamma
     cdef ndarray fireflies
 
@@ -80,13 +80,13 @@ cdef class Firefly(AlgorithmBase):
 
         # all fireflies, depend on population n
         self.fireflies = ndarray(self.n, dtype=object)
-        cdef int i
+        cdef unsigned int i
         for i in range(self.n):
             self.fireflies[i] = Chromosome.__new__(Chromosome, self.D)
         self.last_best = Chromosome.__new__(Chromosome, self.D)
 
     cdef inline void initialize(self):
-        cdef int i, j
+        cdef unsigned int i, j
         cdef Chromosome tmp
         for i in range(self.n):
             # initialize the Chromosome
@@ -98,7 +98,7 @@ cdef class Firefly(AlgorithmBase):
         self.last_best.assign(self.fireflies[0])
 
     cdef inline void move_fireflies(self):
-        cdef int i
+        cdef unsigned int i
         cdef bint is_move
         cdef double scale, tmp_v
         cdef Chromosome tmp, other
@@ -125,7 +125,7 @@ cdef class Firefly(AlgorithmBase):
             return False
         cdef double r = _distance(me, she)
         cdef double beta = (self.beta0 - self.beta_min) * exp(-self.gamma * r * r) + self.beta_min
-        cdef int i
+        cdef unsigned int i
         cdef double scale, me_v
         for i in range(me.n):
             scale = self.ub[i] - self.lb[i]

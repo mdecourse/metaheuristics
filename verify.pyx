@@ -131,7 +131,6 @@ cdef class AlgorithmBase:
     cdef inline void report(self):
         self.fitness_time.append((self.gen, self.last_best.f, time() - self.time_start))
 
-    @cython.cdivision
     cpdef tuple run(self):
         """Init and run GA for max_gen times."""
         self.time_start = time()

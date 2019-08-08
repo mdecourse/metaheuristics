@@ -27,7 +27,7 @@ cdef class Genetic(AlgorithmBase):
 
     """Algorithm class."""
 
-    cdef int nParm, nPop
+    cdef unsigned int nParm, nPop
     cdef double pCross, pMute, pWin, bDelta
     cdef ndarray chromosome, new_chromosome
 
@@ -58,7 +58,7 @@ cdef class Genetic(AlgorithmBase):
 
         self.chromosome = ndarray(self.nPop, dtype=object)
         self.new_chromosome = ndarray(self.nPop, dtype=object)
-        cdef int i
+        cdef unsigned int i
         for i in range(self.nPop):
             self.chromosome[i] = Chromosome.__new__(Chromosome, self.nParm)
         for i in range(self.nPop):
@@ -72,7 +72,7 @@ cdef class Genetic(AlgorithmBase):
         return v
 
     cdef inline void initialize(self):
-        cdef int i, j
+        cdef unsigned int i, j
         cdef Chromosome tmp
         for i in range(self.nPop):
             tmp = self.chromosome[i]
@@ -89,9 +89,9 @@ cdef class Genetic(AlgorithmBase):
         cdef Chromosome c2 = Chromosome.__new__(Chromosome, self.nParm)
         cdef Chromosome c3 = Chromosome.__new__(Chromosome, self.nParm)
 
-        cdef int i, s, j
+        cdef unsigned int i, s
         cdef Chromosome b1, b2
-        for i in range(0, self.nPop - 1, 2):
+        for i in range(0, <unsigned int>(self.nPop - 1), 2):
             if not rand_v() < self.pCross:
                 continue
 
@@ -108,7 +108,7 @@ cdef class Genetic(AlgorithmBase):
             c1.f = self.func.fitness(c1.v)
             c2.f = self.func.fitness(c2.v)
             c3.f = self.func.fitness(c3.v)
-            # maybe use bubble sort? smaller -> larger
+            # bubble sort: smaller -> larger
             if c1.f > c2.f:
                 c1, c2 = c2, c1
             if c1.f > c3.f:
@@ -128,7 +128,7 @@ cdef class Genetic(AlgorithmBase):
         return y * rand_v() * pow(1.0 - r, self.bDelta)
 
     cdef inline void fitness(self):
-        cdef int i
+        cdef unsigned int i
         cdef Chromosome tmp
         for i in range(self.nPop):
             tmp = self.chromosome[i]
@@ -145,7 +145,7 @@ cdef class Genetic(AlgorithmBase):
             self.last_best.assign(self.chromosome[index])
 
     cdef inline void mutate(self):
-        cdef int i, s
+        cdef unsigned int i, s
         cdef Chromosome tmp
         for i in range(self.nPop):
             if not rand_v() < self.pMute:
@@ -159,7 +159,7 @@ cdef class Genetic(AlgorithmBase):
 
     cdef inline void select(self):
         """roulette wheel selection"""
-        cdef int i, j, k
+        cdef unsigned int i, j, k
         cdef Chromosome baby, b1, b2
         for i in range(self.nPop):
             j = rand_i(self.nPop)

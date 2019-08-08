@@ -28,7 +28,8 @@ cdef class Differential(AlgorithmBase):
 
     """Algorithm class."""
 
-    cdef int strategy, D, NP, r1, r2, r3, r4, r5
+    cdef unsigned char strategy
+    cdef unsigned int D, NP, r1, r2, r3, r4, r5
     cdef double F, CR
     cdef ndarray pool
 
@@ -70,7 +71,7 @@ cdef class Differential(AlgorithmBase):
 
         # generation pool, depend on population size
         self.pool = ndarray(self.NP, dtype=object)
-        cdef int i
+        cdef unsigned int i
         for i in range(self.NP):
             self.pool[i] = Chromosome.__new__(Chromosome, self.D)
         self.last_best = Chromosome.__new__(Chromosome, self.D)
@@ -88,7 +89,7 @@ cdef class Differential(AlgorithmBase):
 
     cdef inline void initialize(self):
         """Initial population."""
-        cdef int i, j
+        cdef unsigned int i, j
         cdef Chromosome tmp
         for i in range(self.NP):
             tmp = self.pool[i]
@@ -111,7 +112,7 @@ cdef class Differential(AlgorithmBase):
                 f = tmp.f
         return self.pool[index]
 
-    cdef inline void generate_random_vector(self, int i):
+    cdef inline void generate_random_vector(self, unsigned int i):
         """Generate new vector."""
         self.r1 = self.r2 = self.r3 = self.r4 = self.r5 = i
         while self.r1 == i:
@@ -139,7 +140,7 @@ cdef class Differential(AlgorithmBase):
 
     cdef inline void type1(self, Chromosome tmp, Eq func):
         cdef int n = rand_i(self.D)
-        cdef int l_v = 0
+        cdef unsigned int l_v = 0
         while True:
             func(self, n, tmp)
             n = (n + 1) % self.D
@@ -149,7 +150,7 @@ cdef class Differential(AlgorithmBase):
 
     cdef inline void type2(self, Chromosome tmp, Eq func):
         cdef int n = rand_i(self.D)
-        cdef int l_v
+        cdef unsigned int l_v
         for l_v in range(self.D):
             if rand_v() < self.CR or l_v == self.D - 1:
                 func(self, n, tmp)
@@ -215,14 +216,14 @@ cdef class Differential(AlgorithmBase):
 
     cdef inline bint over_bound(self, Chromosome member):
         """check the member's chromosome that is out of bound?"""
-        cdef int i
+        cdef unsigned int i
         for i in range(self.D):
             if member.v[i] > self.ub[i] or member.v[i] < self.lb[i]:
                 return True
         return False
 
     cdef inline void generation_process(self):
-        cdef int i
+        cdef unsigned int i
         cdef Chromosome tmp, baby
         for i in range(self.NP):
             # generate new vector
