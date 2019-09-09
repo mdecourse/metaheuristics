@@ -10,12 +10,12 @@ license: AGPL
 email: pyslvs@gmail.com
 """
 
-from time import time
+from time import perf_counter
 from numpy import zeros
 cimport cython
 from libc.stdlib cimport rand, srand, RAND_MAX
 
-srand(int(time()))
+srand(int(perf_counter()))
 
 
 cdef inline double rand_v(double lower = 0., double upper = 1.) nogil:
@@ -129,11 +129,11 @@ cdef class AlgorithmBase:
         raise NotImplementedError
 
     cdef inline void report(self):
-        self.fitness_time.append((self.gen, self.last_best.f, time() - self.time_start))
+        self.fitness_time.append((self.gen, self.last_best.f, perf_counter() - self.time_start))
 
     cpdef tuple run(self):
         """Init and run GA for max_gen times."""
-        self.time_start = time()
+        self.time_start = perf_counter()
         self.initialize()
         self.report()
 
@@ -152,7 +152,7 @@ cdef class AlgorithmBase:
                 if self.last_best.f <= self.stop_at_f:
                     break
             elif self.stop_at == MAX_TIME:
-                if time() - self.time_start >= self.stop_at_f > 0:
+                if perf_counter() - self.time_start >= self.stop_at_f > 0:
                     break
             elif self.stop_at == SLOW_DOWN:
                 diff = last_best - self.last_best.f
