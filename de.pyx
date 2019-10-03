@@ -69,7 +69,7 @@ cdef class Differential(AlgorithmBase):
         # the vector
         self.r1 = self.r2 = self.r3 = self.r4 = self.r5 = 0
 
-        # generation pool, depend on population size
+        # generation pool, depended on population size
         self.pool = ndarray(self.NP, dtype=object)
         cdef unsigned int i
         for i in range(self.NP):

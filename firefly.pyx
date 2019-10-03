@@ -78,7 +78,7 @@ cdef class Firefly(AlgorithmBase):
         # D, the dimension of question and each firefly will random place position in this landscape
         self.D = len(self.lb)
 
-        # all fireflies, depend on population n
+        # all fireflies, depended on population n
         self.fireflies = ndarray(self.n, dtype=object)
         cdef unsigned int i
         for i in range(self.n):
@@ -157,7 +157,7 @@ cdef class Firefly(AlgorithmBase):
     cdef inline void generation_process(self):
         self.move_fireflies()
         self.evaluate()
-        # adjust alpha, depend on fitness value
+        # adjust alpha, depended on fitness value
         # if fitness value is larger, then alpha should larger
         # if fitness value is small, then alpha should smaller
         cdef Chromosome current_best = self.find_firefly()
