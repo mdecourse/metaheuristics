@@ -47,10 +47,10 @@ cdef class Firefly(AlgorithmBase):
 
     def __cinit__(
         self,
-        func: Verification,
-        settings: dict,
-        progress_fun: object = None,
-        interrupt_fun: object = None
+        Verification func,
+        dict settings,
+        object progress_fun=None,
+        object interrupt_fun=None
     ):
         """
         settings = {

@@ -34,7 +34,7 @@ cdef class Chromosome:
 
     """Data structure class."""
 
-    def __cinit__(self, n: cython.uint):
+    def __cinit__(self, int n):
         self.n = n if n > 0 else 2
         self.f = 0.
         self.v = zeros(n)
@@ -79,10 +79,10 @@ cdef class AlgorithmBase:
 
     def __cinit__(
         self,
-        func: Verification,
-        settings: dict,
-        progress_fun: object = None,
-        interrupt_fun: object = None
+        Verification func,
+        dict settings,
+        object progress_fun=None,
+        object interrupt_fun=None
     ):
         """Generic settings."""
         # object function
