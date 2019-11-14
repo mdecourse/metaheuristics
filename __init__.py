@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""Kernel of Metaheuristic Random Algorithm."""
+"""Kernel of Metaheuristic Algorithm."""
 
 from .verify import Verification, AlgorithmBase
 from .rga import Genetic
