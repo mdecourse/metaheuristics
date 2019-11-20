@@ -14,8 +14,7 @@ from time import process_time
 from numpy import zeros
 cimport cython
 from libc.stdlib cimport rand, srand, RAND_MAX
-
-srand(int(process_time()))
+from libc.time cimport time
 
 
 cdef inline double rand_v(double lower = 0., double upper = 1.) nogil:
@@ -85,9 +84,9 @@ cdef class AlgorithmBase:
         object interrupt_fun=None
     ):
         """Generic settings."""
+        srand(time(NULL))
         # object function
         self.func = func
-
         self.stop_at_i = 0
         self.stop_at_f = 0.
         if 'max_gen' in settings:
@@ -109,12 +108,10 @@ cdef class AlgorithmBase:
             self.rpt = 10
         self.progress_fun = progress_fun
         self.interrupt_fun = interrupt_fun
-
         self.lb = self.func.get_lower()
         self.ub = self.func.get_upper()
         if len(self.lb) != len(self.ub):
             raise ValueError("length of upper and lower bounds must be equal")
-
         # setup benchmark
         self.gen = 0
         self.time_start = 0
