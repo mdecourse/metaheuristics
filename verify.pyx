@@ -11,7 +11,7 @@ email: pyslvs@gmail.com
 """
 
 from time import process_time
-from numpy import zeros, array as np_array
+from numpy import zeros, array as np_array, float64 as np_float
 cimport cython
 from libc.stdlib cimport rand, srand, RAND_MAX
 from libc.time cimport time
@@ -34,17 +34,15 @@ cdef class Chromosome:
     """Data structure class."""
 
     def __cinit__(self, uint n):
-        self.n = n if n > 1 else 2
         self.f = 0.
-        self.v = zeros(n)
+        self.v = zeros(n, dtype=np_float)
 
     cdef void assign(self, Chromosome other):
         """Assign from an old generation."""
         if other is self:
             return
-        self.n = other.n
         self.f = other.f
-        self.v = other.v.copy()
+        self.v[:] = other.v
 
     @staticmethod
     cdef ndarray[object, ndim=1] new_pop(uint d, uint n):
@@ -116,8 +114,10 @@ cdef class AlgorithmBase:
         self.interrupt_fun = interrupt_fun
         self.lb = self.func.get_lower()
         self.ub = self.func.get_upper()
-        if len(self.lb) != len(self.ub):
+        self.dim = len(self.ub)
+        if self.dim != len(self.lb):
             raise ValueError("length of upper and lower bounds must be equal")
+        self.last_best = Chromosome.__new__(Chromosome, self.dim)
         # setup benchmark
         self.gen = 0
         self.time_start = 0
@@ -132,6 +132,7 @@ cdef class AlgorithmBase:
         raise NotImplementedError
 
     cdef inline void report(self):
+        """Report generation, fitness and time."""
         self.fitness_time.append((self.gen, self.last_best.f, process_time() - self.time_start))
 
     cpdef tuple run(self):

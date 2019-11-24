@@ -10,7 +10,6 @@ email: pyslvs@gmail.com
 """
 
 cimport cython
-from libc.math cimport HUGE_VAL
 from .verify cimport (
     rand_v,
     rand_i,
@@ -42,7 +41,7 @@ cdef class Differential(AlgorithmBase):
     """Algorithm class."""
 
     cdef Strategy strategy
-    cdef uint dim, np, r1, r2, r3, r4, r5
+    cdef uint np, r1, r2, r3, r4, r5
     cdef double F, CR
     cdef Chromosome[:] pool
 
@@ -79,15 +78,10 @@ cdef class Differential(AlgorithmBase):
         self.CR = settings.get('CR', 0.9)
         if not (0 <= self.CR <= 1):
             raise ValueError('CR should be [0,1]')
-        # dimension of question
-        self.dim = len(self.lb)
-        if self.dim <= 0:
-            raise ValueError('dim should be integer and larger than 0')
         # the vector
         self.r1 = self.r2 = self.r3 = self.r4 = self.r5 = 0
         # generation pool, depended on population size
         self.pool = Chromosome.new_pop(self.dim, self.np)
-        self.last_best = Chromosome.__new__(Chromosome, self.dim)
 
     cdef inline void initialize(self):
         """Initial population."""
@@ -102,15 +96,12 @@ cdef class Differential(AlgorithmBase):
 
     cdef inline Chromosome find_best(self):
         """Find member that have minimum fitness value from pool."""
-        cdef int index = 0
-        cdef double f = HUGE_VAL
-        cdef int i
+        cdef Chromosome best = self.pool[0]
         cdef Chromosome tmp
-        for i, tmp in enumerate(self.pool):
-            if tmp.f < f:
-                index = i
-                f = tmp.f
-        return self.pool[index]
+        for tmp in self.pool[1:]:
+            if tmp.f < best.f:
+                best = tmp
+        return best
 
     cdef inline void generate_random_vector(self, uint i):
         """Generate new vector."""
@@ -185,7 +176,6 @@ cdef class Differential(AlgorithmBase):
         """use new vector, recombination the new one member to tmp."""
         cdef Chromosome tmp = Chromosome.__new__(Chromosome, self.dim)
         tmp.assign(self.pool[i])
-
         if self.strategy == 1:
             self.type1(tmp, Differential.eq1)
         elif self.strategy == 2:

@@ -21,12 +21,12 @@ from .verify cimport (
 ctypedef unsigned int uint
 
 
-cdef inline double _distance(Chromosome me, Chromosome she):
+cdef double _distance(Chromosome me, Chromosome she, uint dim):
     """Distance of two fireflies."""
     cdef double dist = 0
     cdef uint i
     cdef double diff
-    for i in range(me.n):
+    for i in range(dim):
         diff = me.v[i] - she.v[i]
         dist += diff * diff
     return sqrt(dist)
@@ -37,7 +37,7 @@ cdef class Firefly(AlgorithmBase):
 
     """Algorithm class."""
 
-    cdef uint dim, n
+    cdef uint n
     cdef double alpha, alpha0, beta_min, beta0, gamma
     cdef Chromosome[:] fireflies
 
@@ -71,12 +71,8 @@ cdef class Firefly(AlgorithmBase):
         self.beta0 = settings.get('beta0', 1.)
         # gamma
         self.gamma = settings.get('gamma', 1.)
-        # dim, the dimension of question and each firefly will random place position in this landscape
-        self.dim = len(self.lb)
-
         # all fireflies, depended on population n
         self.fireflies = Chromosome.new_pop(self.dim, self.n)
-        self.last_best = Chromosome.__new__(Chromosome, self.dim)
 
     cdef inline void initialize(self):
         cdef uint i, j
@@ -86,7 +82,6 @@ cdef class Firefly(AlgorithmBase):
             tmp = self.fireflies[i]
             for j in range(self.dim):
                 tmp.v[j] = rand_v(self.lb[j], self.ub[j])
-
         self.evaluate()
         self.last_best.assign(self.fireflies[0])
 
@@ -116,11 +111,11 @@ cdef class Firefly(AlgorithmBase):
     cdef inline bint move_firefly(self, Chromosome me, Chromosome she):
         if me.f <= she.f:
             return False
-        cdef double r = _distance(me, she)
+        cdef double r = _distance(me, she, self.dim)
         cdef double beta = (self.beta0 - self.beta_min) * exp(-self.gamma * r * r) + self.beta_min
         cdef uint i
         cdef double scale, me_v
-        for i in range(me.n):
+        for i in range(self.dim):
             scale = self.ub[i] - self.lb[i]
             me_v = me.v[i] + beta * (she.v[i] - me.v[i]) + self.alpha * scale * rand_v(-0.5, 0.5)
             me.v[i] = self.check(i, me_v)

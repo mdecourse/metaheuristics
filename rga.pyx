@@ -28,7 +28,7 @@ cdef class Genetic(AlgorithmBase):
 
     """Algorithm class."""
 
-    cdef uint parm_num, pop_num
+    cdef uint pop_num
     cdef double cross, mute, win, delta
     cdef Chromosome[:] chromosome, new_chromosome
 
@@ -55,11 +55,8 @@ cdef class Genetic(AlgorithmBase):
         self.mute = settings.get('mute', 0.05)
         self.win = settings.get('win', 0.95)
         self.delta = settings.get('delta', 5.)
-        self.parm_num = len(self.lb)
-
-        self.chromosome = Chromosome.new_pop(self.parm_num, self.pop_num)
-        self.new_chromosome = Chromosome.new_pop(self.parm_num, self.pop_num)
-        self.last_best = Chromosome.__new__(Chromosome, self.parm_num)
+        self.chromosome = Chromosome.new_pop(self.dim, self.pop_num)
+        self.new_chromosome = Chromosome.new_pop(self.dim, self.pop_num)
 
     cdef inline double check(self, int i, double v):
         """If a variable is out of bound, replace it with a random value."""
@@ -72,19 +69,17 @@ cdef class Genetic(AlgorithmBase):
         cdef Chromosome tmp
         for i in range(self.pop_num):
             tmp = self.chromosome[i]
-            for j in range(self.parm_num):
+            for j in range(self.dim):
                 tmp.v[j] = rand_v(self.lb[j], self.ub[j])
-
         tmp = self.chromosome[0]
         tmp.f = self.func.fitness(tmp.v)
         self.last_best.assign(tmp)
         self.fitness()
 
     cdef inline void cross_over(self):
-        cdef Chromosome c1 = Chromosome.__new__(Chromosome, self.parm_num)
-        cdef Chromosome c2 = Chromosome.__new__(Chromosome, self.parm_num)
-        cdef Chromosome c3 = Chromosome.__new__(Chromosome, self.parm_num)
-
+        cdef Chromosome c1 = Chromosome.__new__(Chromosome, self.dim)
+        cdef Chromosome c2 = Chromosome.__new__(Chromosome, self.dim)
+        cdef Chromosome c3 = Chromosome.__new__(Chromosome, self.dim)
         cdef uint i, s
         cdef Chromosome b1, b2
         for i in range(0, <uint>(self.pop_num - 1), 2):
@@ -93,7 +88,7 @@ cdef class Genetic(AlgorithmBase):
 
             b1 = self.chromosome[i]
             b2 = self.chromosome[i + 1]
-            for s in range(self.parm_num):
+            for s in range(self.dim):
                 # first baby, half father half mother
                 c1.v[s] = 0.5 * b1.v[s] + 0.5 * b2.v[s]
                 # second baby, three quarters of father and quarter of mother
@@ -146,7 +141,7 @@ cdef class Genetic(AlgorithmBase):
         for i in range(self.pop_num):
             if not rand_v() < self.mute:
                 continue
-            s = rand_i(self.parm_num)
+            s = rand_i(self.dim)
             tmp = self.chromosome[i]
             if rand_v() < 0.5:
                 tmp.v[s] += self.get_delta(self.ub[s] - tmp.v[s])

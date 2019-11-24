@@ -10,7 +10,12 @@ email: pyslvs@gmail.com
 """
 
 cimport cython
+from numpy cimport ndarray
+from numpy import zeros, float64 as np_float
 from .verify cimport (
+    rand_v,
+    rand_i,
+    Chromosome,
     Verification,
     AlgorithmBase,
 )
@@ -24,6 +29,7 @@ cdef class TeachingLearning(AlgorithmBase):
     """Algorithm class."""
 
     cdef uint class_size
+    cdef Chromosome[:] students
 
     def __cinit__(
         self,
@@ -40,11 +46,91 @@ cdef class TeachingLearning(AlgorithmBase):
         }
         """
         self.class_size = settings.get('class_size', 50)
+        self.students = Chromosome.new_pop(self.dim, self.class_size)
 
-    cdef void initialize(self):
-        """Initialize function."""
-        raise NotImplementedError
+    cdef inline void initialize(self):
+        """Initial population: Sorted students."""
+        cdef ndarray[double, ndim=2] s = zeros((self.class_size, self.dim + 1), dtype=np_float)
+        cdef uint i, j
+        cdef Chromosome tmp
+        for i in range(self.class_size):
+            for j in range(self.dim):
+                s[i, j] = rand_v(self.lb[j], self.ub[j])
+            s[i, -1] = self.func.fitness(s[i, :self.dim])
+        s = s[s[:, -1].argsort()][::-1]
+        for i in range(self.class_size):
+            self.students[i].v[:] = s[i, :self.dim]
+            self.students[i].f = s[i, -1]
+        self.last_best.assign(self.students[-1])
 
-    cdef void generation_process(self):
+    cdef inline void teaching(self, Chromosome student):
+        """Teaching phase. The last best is the teacher."""
+        cdef ndarray[double, ndim=1] v = zeros(self.dim, dtype=np_float)
+        cdef double tf = round(1 + rand_v())
+        cdef uint i
+        cdef double mean
+        cdef Chromosome tmp
+        for i in range(self.dim):
+            if self.state_check():
+                return
+            mean = 0
+            for tmp in self.students:
+                mean += tmp.v[i]
+            mean /= self.dim
+            v[i] = student.v[i] + rand_v(1, self.dim) * (self.last_best.v[i] - tf * mean)
+            if v[i] < self.lb[i]:
+                v[i] = self.lb[i]
+            elif v[i] > self.ub[i]:
+                v[i] = self.ub[i]
+        cdef double f_new = self.func.fitness(v)
+        if f_new < student.f:
+            student.v = v
+            student.f = f_new
+        if student.f < self.last_best.f:
+            self.last_best.assign(student)
+
+    cdef inline void learning(self, uint index, Chromosome student_a):
+        """Learning phase."""
+        cdef uint cmp_index = rand_i(self.class_size)
+        while cmp_index == index:
+            cmp_index = rand_i(self.class_size)
+        cdef Chromosome student_b = self.students[cmp_index]
+        cdef ndarray[double, ndim=1] v = zeros(self.dim, dtype=np_float)
+        cdef uint i
+        cdef double diff
+        for i in range(self.dim):
+            if self.state_check():
+                return
+            if student_b.f < student_a.f:
+                diff = student_a.v[i] - student_b.v[i]
+            else:
+                diff = student_b.v[i] - student_a.v[i]
+            v[i] = student_a.v[i] + diff * rand_v(1, self.dim)
+            if v[i] < self.lb[i]:
+                v[i] = self.lb[i]
+            elif v[i] > self.ub[i]:
+                v[i] = self.ub[i]
+        cdef double f_new = self.func.fitness(v)
+        if f_new < student_a.f:
+            student_a.v = v
+            student_a.f = f_new
+        if student_a.f < self.last_best.f:
+            self.last_best.assign(student_a)
+
+    cdef inline bint state_check(self):
+        """Check status."""
+        if self.progress_fun is not None:
+            self.progress_fun(self.gen, f"{self.last_best.f:.04f}")
+        if (self.interrupt_fun is not None) and self.interrupt_fun():
+            return True
+        return False
+
+    cdef inline void generation_process(self):
         """The process of each generation."""
-        raise NotImplementedError
+        cdef uint i
+        cdef Chromosome student
+        for i, student in enumerate(self.students):
+            if self.state_check():
+                break
+            self.teaching(student)
+            self.learning(i, student)

@@ -26,7 +26,6 @@ cdef uint rand_i(int upper) nogil
 
 
 cdef class Chromosome:
-    cdef uint n
     cdef double f
     cdef ndarray v
     cdef void assign(self, Chromosome obj)
@@ -43,7 +42,7 @@ cdef class Verification:
 
 cdef class AlgorithmBase:
 
-    cdef uint stop_at_i, gen, rpt
+    cdef uint dim, stop_at_i, gen, rpt
     cdef double stop_at_f, time_start
     cdef stop_option stop_at
     cdef Verification func
