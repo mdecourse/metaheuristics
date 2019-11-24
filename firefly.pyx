@@ -16,7 +16,6 @@ from libc.math cimport (
     sqrt,
     HUGE_VAL,
 )
-from numpy import array as np_array
 from .verify cimport (
     rand_v,
     Chromosome,

@@ -11,7 +11,6 @@ email: pyslvs@gmail.com
 
 from libc.math cimport pow, HUGE_VAL
 cimport cython
-from numpy import array as np_array
 from .verify cimport (
     MAX_GEN,
     rand_v,

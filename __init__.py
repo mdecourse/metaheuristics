@@ -6,6 +6,7 @@ from .verify import Verification, AlgorithmBase
 from .rga import Genetic
 from .firefly import Firefly
 from .de import Differential
+from .tlbo import TeachingLearning
 
 __all__ = [
     'Verification',
@@ -13,4 +14,5 @@ __all__ = [
     'Genetic',
     'Firefly',
     'Differential',
+    'TeachingLearning',
 ]
