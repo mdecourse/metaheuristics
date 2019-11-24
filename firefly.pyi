@@ -2,7 +2,5 @@
 
 from .verify import AlgorithmBase
 
-
 class Firefly(AlgorithmBase):
-
     """Algorithm class."""

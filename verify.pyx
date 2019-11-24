@@ -11,7 +11,7 @@ email: pyslvs@gmail.com
 """
 
 from time import process_time
-from numpy import zeros
+from numpy import zeros, array as np_array
 cimport cython
 from libc.stdlib cimport rand, srand, RAND_MAX
 from libc.time cimport time
@@ -22,7 +22,7 @@ cdef inline double rand_v(double lower = 0., double upper = 1.) nogil:
     return lower + <double>rand() / RAND_MAX * (upper - lower)
 
 
-cdef inline int rand_i(int upper) nogil:
+cdef inline uint rand_i(int upper) nogil:
     """Random integer between [0, upper]."""
     return rand() % upper
 
@@ -33,17 +33,23 @@ cdef class Chromosome:
 
     """Data structure class."""
 
-    def __cinit__(self, int n):
-        self.n = n if n > 0 else 2
+    def __cinit__(self, uint n):
+        self.n = n if n > 1 else 2
         self.f = 0.
         self.v = zeros(n)
 
     cdef void assign(self, Chromosome other):
+        """Assign from an old generation."""
         if other is self:
             return
         self.n = other.n
         self.f = other.f
         self.v = other.v.copy()
+
+    @staticmethod
+    cdef ndarray[object, ndim=1] new_pop(uint d, uint n):
+        """Create new population."""
+        return np_array([Chromosome.__new__(Chromosome, d) for _ in range(n)])
 
 
 cdef class Verification:

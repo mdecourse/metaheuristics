@@ -2,7 +2,5 @@
 
 from .verify import AlgorithmBase
 
-
 class Differential(AlgorithmBase):
-
     """Algorithm class."""

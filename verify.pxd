@@ -12,6 +12,7 @@ email: pyslvs@gmail.com
 
 from numpy cimport ndarray
 
+ctypedef unsigned int uint
 
 cdef enum stop_option:
     MAX_GEN
@@ -21,14 +22,16 @@ cdef enum stop_option:
 
 
 cdef double rand_v(double lower = *, double upper = *) nogil
-cdef int rand_i(int upper) nogil
+cdef uint rand_i(int upper) nogil
 
 
 cdef class Chromosome:
-    cdef unsigned int n
+    cdef uint n
     cdef double f
     cdef ndarray v
     cdef void assign(self, Chromosome obj)
+    @staticmethod
+    cdef ndarray[object, ndim=1] new_pop(uint d, uint n)
 
 
 cdef class Verification:
@@ -40,7 +43,7 @@ cdef class Verification:
 
 cdef class AlgorithmBase:
 
-    cdef unsigned int stop_at_i, gen, rpt
+    cdef uint stop_at_i, gen, rpt
     cdef double stop_at_f, time_start
     cdef stop_option stop_at
     cdef Verification func

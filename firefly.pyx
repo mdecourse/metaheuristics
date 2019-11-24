@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # cython: language_level=3, embedsignature=True, cdivision=True
 
-"""Firefly Algorithm.
+"""Firefly Algorithm
 
 author: Yuan Chang
 copyright: Copyright (C) 2016-2019
@@ -16,7 +16,7 @@ from libc.math cimport (
     sqrt,
     HUGE_VAL,
 )
-from numpy cimport ndarray
+from numpy import array as np_array
 from .verify cimport (
     rand_v,
     Chromosome,
@@ -24,11 +24,13 @@ from .verify cimport (
     AlgorithmBase,
 )
 
+ctypedef unsigned int uint
+
 
 cdef inline double _distance(Chromosome me, Chromosome she):
     """Distance of two fireflies."""
     cdef double dist = 0
-    cdef unsigned int i
+    cdef uint i
     cdef double diff
     for i in range(me.n):
         diff = me.v[i] - she.v[i]
@@ -41,9 +43,9 @@ cdef class Firefly(AlgorithmBase):
 
     """Algorithm class."""
 
-    cdef unsigned int D, n
+    cdef uint D, n
     cdef double alpha, alpha0, beta_min, beta0, gamma
-    cdef ndarray fireflies
+    cdef Chromosome[:] fireflies
 
     def __cinit__(
         self,
@@ -54,13 +56,13 @@ cdef class Firefly(AlgorithmBase):
     ):
         """
         settings = {
-            'n',
-            'alpha',
-            'beta_min',
-            'beta0',
-            'gamma',
-            'max_gen', 'min_fit' or 'max_time',
-            'report'
+            'n': int,
+            'alpha': float,
+            'beta_min': float,
+            'beta0': float,
+            'gamma': float,
+            'max_gen': int or 'min_fit': float or 'max_time': float,
+            'report': int,
         }
         """
         # n, the population size of fireflies
@@ -79,14 +81,11 @@ cdef class Firefly(AlgorithmBase):
         self.D = len(self.lb)
 
         # all fireflies, depended on population n
-        self.fireflies = ndarray(self.n, dtype=object)
-        cdef unsigned int i
-        for i in range(self.n):
-            self.fireflies[i] = Chromosome.__new__(Chromosome, self.D)
+        self.fireflies = Chromosome.new_pop(self.D, self.n)
         self.last_best = Chromosome.__new__(Chromosome, self.D)
 
     cdef inline void initialize(self):
-        cdef unsigned int i, j
+        cdef uint i, j
         cdef Chromosome tmp
         for i in range(self.n):
             # initialize the Chromosome
@@ -98,7 +97,7 @@ cdef class Firefly(AlgorithmBase):
         self.last_best.assign(self.fireflies[0])
 
     cdef inline void move_fireflies(self):
-        cdef unsigned int i
+        cdef uint i
         cdef bint is_move
         cdef double scale, tmp_v
         cdef Chromosome tmp, other
@@ -125,7 +124,7 @@ cdef class Firefly(AlgorithmBase):
             return False
         cdef double r = _distance(me, she)
         cdef double beta = (self.beta0 - self.beta_min) * exp(-self.gamma * r * r) + self.beta_min
-        cdef unsigned int i
+        cdef uint i
         cdef double scale, me_v
         for i in range(me.n):
             scale = self.ub[i] - self.lb[i]
@@ -163,5 +162,4 @@ cdef class Firefly(AlgorithmBase):
         cdef Chromosome current_best = self.find_firefly()
         if self.last_best.f > current_best.f:
             self.last_best.assign(current_best)
-
         self.alpha = self.alpha0 * log10(current_best.f + 1)

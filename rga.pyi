@@ -2,7 +2,5 @@
 
 from .verify import AlgorithmBase
 
-
 class Genetic(AlgorithmBase):
-
     """Algorithm class."""

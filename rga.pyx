@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # cython: language_level=3, embedsignature=True, cdivision=True
 
-"""Real-coded Genetic Algorithm.
+"""Real-coded Genetic Algorithm
 
 author: Yuan Chang
 copyright: Copyright (C) 2016-2019
@@ -11,7 +11,7 @@ email: pyslvs@gmail.com
 
 from libc.math cimport pow, HUGE_VAL
 cimport cython
-from numpy cimport ndarray
+from numpy import array as np_array
 from .verify cimport (
     MAX_GEN,
     rand_v,
@@ -21,15 +21,17 @@ from .verify cimport (
     AlgorithmBase,
 )
 
+ctypedef unsigned int uint
+
 
 @cython.final
 cdef class Genetic(AlgorithmBase):
 
     """Algorithm class."""
 
-    cdef unsigned int nParm, nPop
+    cdef uint nParm, nPop
     cdef double pCross, pMute, pWin, bDelta
-    cdef ndarray chromosome, new_chromosome
+    cdef Chromosome[:] chromosome, new_chromosome
 
     def __cinit__(
         self,
@@ -40,13 +42,13 @@ cdef class Genetic(AlgorithmBase):
     ):
         """
         settings = {
-            'nPop',
-            'pCross',
-            'pMute',
-            'pWin',
-            'bDelta',
-            'max_gen' or 'min_fit' or 'max_time',
-            'report'
+            'nPop': int,
+            'pCross': float,
+            'pMute': float,
+            'pWin': float,
+            'bDelta': float,
+            'max_gen': int or 'min_fit': float or 'max_time': float,
+            'report': int,
         }
         """
         self.nPop = settings.get('nPop', 500)
@@ -56,13 +58,8 @@ cdef class Genetic(AlgorithmBase):
         self.bDelta = settings.get('bDelta', 5.)
         self.nParm = len(self.lb)
 
-        self.chromosome = ndarray(self.nPop, dtype=object)
-        self.new_chromosome = ndarray(self.nPop, dtype=object)
-        cdef unsigned int i
-        for i in range(self.nPop):
-            self.chromosome[i] = Chromosome.__new__(Chromosome, self.nParm)
-        for i in range(self.nPop):
-            self.new_chromosome[i] = Chromosome.__new__(Chromosome, self.nParm)
+        self.chromosome = Chromosome.new_pop(self.nParm, self.nPop)
+        self.new_chromosome = Chromosome.new_pop(self.nParm, self.nPop)
         self.last_best = Chromosome.__new__(Chromosome, self.nParm)
 
     cdef inline double check(self, int i, double v):
@@ -72,7 +69,7 @@ cdef class Genetic(AlgorithmBase):
         return v
 
     cdef inline void initialize(self):
-        cdef unsigned int i, j
+        cdef uint i, j
         cdef Chromosome tmp
         for i in range(self.nPop):
             tmp = self.chromosome[i]
@@ -89,9 +86,9 @@ cdef class Genetic(AlgorithmBase):
         cdef Chromosome c2 = Chromosome.__new__(Chromosome, self.nParm)
         cdef Chromosome c3 = Chromosome.__new__(Chromosome, self.nParm)
 
-        cdef unsigned int i, s
+        cdef uint i, s
         cdef Chromosome b1, b2
-        for i in range(0, <unsigned int>(self.nPop - 1), 2):
+        for i in range(0, <uint>(self.nPop - 1), 2):
             if not rand_v() < self.pCross:
                 continue
 
@@ -128,7 +125,7 @@ cdef class Genetic(AlgorithmBase):
         return y * rand_v() * pow(1.0 - r, self.bDelta)
 
     cdef inline void fitness(self):
-        cdef unsigned int i
+        cdef uint i
         cdef Chromosome tmp
         for i in range(self.nPop):
             tmp = self.chromosome[i]
@@ -145,7 +142,7 @@ cdef class Genetic(AlgorithmBase):
             self.last_best.assign(self.chromosome[index])
 
     cdef inline void mutate(self):
-        cdef unsigned int i, s
+        cdef uint i, s
         cdef Chromosome tmp
         for i in range(self.nPop):
             if not rand_v() < self.pMute:
@@ -159,7 +156,7 @@ cdef class Genetic(AlgorithmBase):
 
     cdef inline void select(self):
         """roulette wheel selection"""
-        cdef unsigned int i, j, k
+        cdef uint i, j, k
         cdef Chromosome baby, b1, b2
         for i in range(self.nPop):
             j = rand_i(self.nPop)
