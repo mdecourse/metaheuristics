@@ -42,7 +42,7 @@ cdef class Differential(AlgorithmBase):
     """Algorithm class."""
 
     cdef Strategy strategy
-    cdef uint D, NP, r1, r2, r3, r4, r5
+    cdef uint dim, np, r1, r2, r3, r4, r5
     cdef double F, CR
     cdef Chromosome[:] pool
 
@@ -69,8 +69,8 @@ cdef class Differential(AlgorithmBase):
             raise ValueError(f"invalid strategy: {strategy}")
         self.strategy = <Strategy>strategy
         # population size
-        # To start off NP = 10*D is a reasonable choice. Increase NP if misconvergence
-        self.NP = settings.get('NP', 400)
+        # To start off np = 10*dim is a reasonable choice. Increase np if misconvergence
+        self.np = settings.get('NP', 400)
         # weight factor F is usually between 0.5 and 1 (in rare cases > 1)
         self.F = settings.get('F', 0.6)
         if not (0.5 <= self.F <= 1):
@@ -80,22 +80,22 @@ cdef class Differential(AlgorithmBase):
         if not (0 <= self.CR <= 1):
             raise ValueError('CR should be [0,1]')
         # dimension of question
-        self.D = len(self.lb)
-        if self.D <= 0:
-            raise ValueError('D should be integer and larger than 0')
+        self.dim = len(self.lb)
+        if self.dim <= 0:
+            raise ValueError('dim should be integer and larger than 0')
         # the vector
         self.r1 = self.r2 = self.r3 = self.r4 = self.r5 = 0
         # generation pool, depended on population size
-        self.pool = Chromosome.new_pop(self.D, self.NP)
-        self.last_best = Chromosome.__new__(Chromosome, self.D)
+        self.pool = Chromosome.new_pop(self.dim, self.np)
+        self.last_best = Chromosome.__new__(Chromosome, self.dim)
 
     cdef inline void initialize(self):
         """Initial population."""
         cdef uint i, j
         cdef Chromosome tmp
-        for i in range(self.NP):
+        for i in range(self.np):
             tmp = self.pool[i]
-            for j in range(self.D):
+            for j in range(self.dim):
                 tmp.v[j] = rand_v(self.lb[j], self.ub[j])
             tmp.f = self.func.fitness(tmp.v)
         self.last_best.assign(self.find_best())
@@ -116,39 +116,39 @@ cdef class Differential(AlgorithmBase):
         """Generate new vector."""
         self.r1 = self.r2 = self.r3 = self.r4 = self.r5 = i
         while self.r1 == i:
-            self.r1 = rand_i(self.NP)
+            self.r1 = rand_i(self.np)
         while self.r2 in {i, self.r1}:
-            self.r2 = rand_i(self.NP)
+            self.r2 = rand_i(self.np)
         if self.strategy in {STRATEGY1, STRATEGY3, STRATEGY6, STRATEGY8}:
             return
         while self.r3 in {i, self.r1, self.r2}:
-            self.r3 = rand_i(self.NP)
+            self.r3 = rand_i(self.np)
         if self.strategy in {STRATEGY2, STRATEGY7}:
             return
         while self.r4 in {i, self.r1, self.r2, self.r3}:
-            self.r4 = rand_i(self.NP)
+            self.r4 = rand_i(self.np)
         if self.strategy in {STRATEGY4, STRATEGY9}:
             return
         while self.r5 in {i, self.r1, self.r2, self.r3, self.r4}:
-            self.r5 = rand_i(self.NP)
+            self.r5 = rand_i(self.np)
 
     cdef inline void type1(self, Chromosome tmp, Eq func):
-        cdef uint n = rand_i(self.D)
+        cdef uint n = rand_i(self.dim)
         cdef uint l_v = 0
         while True:
             func(self, n, tmp)
-            n = (n + 1) % self.D
+            n = (n + 1) % self.dim
             l_v += 1
-            if not (rand_v() < self.CR and l_v < self.D):
+            if not (rand_v() < self.CR and l_v < self.dim):
                 break
 
     cdef inline void type2(self, Chromosome tmp, Eq func):
-        cdef uint n = rand_i(self.D)
+        cdef uint n = rand_i(self.dim)
         cdef uint l_v
-        for l_v in range(self.D):
-            if rand_v() < self.CR or l_v == self.D - 1:
+        for l_v in range(self.dim):
+            if rand_v() < self.CR or l_v == self.dim - 1:
                 func(self, n, tmp)
-            n = (n + 1) % self.D
+            n = (n + 1) % self.dim
 
     cdef void eq1(self, int n, Chromosome tmp):
         cdef Chromosome c1 = self.pool[self.r1]
@@ -183,7 +183,7 @@ cdef class Differential(AlgorithmBase):
 
     cdef inline Chromosome recombination(self, int i):
         """use new vector, recombination the new one member to tmp."""
-        cdef Chromosome tmp = Chromosome.__new__(Chromosome, self.D)
+        cdef Chromosome tmp = Chromosome.__new__(Chromosome, self.dim)
         tmp.assign(self.pool[i])
 
         if self.strategy == 1:
@@ -211,7 +211,7 @@ cdef class Differential(AlgorithmBase):
     cdef inline bint over_bound(self, Chromosome member):
         """check the member's chromosome that is out of bound?"""
         cdef uint i
-        for i in range(self.D):
+        for i in range(self.dim):
             if member.v[i] > self.ub[i] or member.v[i] < self.lb[i]:
                 return True
         return False
@@ -219,7 +219,7 @@ cdef class Differential(AlgorithmBase):
     cdef inline void generation_process(self):
         cdef uint i
         cdef Chromosome tmp, baby
-        for i in range(self.NP):
+        for i in range(self.np):
             # generate new vector
             self.generate_random_vector(i)
             # use the vector recombine the member to temporary

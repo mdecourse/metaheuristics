@@ -10,12 +10,7 @@ email: pyslvs@gmail.com
 """
 
 cimport cython
-from libc.math cimport (
-    exp,
-    log10,
-    sqrt,
-    HUGE_VAL,
-)
+from libc.math cimport exp, log10, sqrt, HUGE_VAL
 from .verify cimport (
     rand_v,
     Chromosome,
@@ -42,7 +37,7 @@ cdef class Firefly(AlgorithmBase):
 
     """Algorithm class."""
 
-    cdef uint D, n
+    cdef uint dim, n
     cdef double alpha, alpha0, beta_min, beta0, gamma
     cdef Chromosome[:] fireflies
 
@@ -76,12 +71,12 @@ cdef class Firefly(AlgorithmBase):
         self.beta0 = settings.get('beta0', 1.)
         # gamma
         self.gamma = settings.get('gamma', 1.)
-        # D, the dimension of question and each firefly will random place position in this landscape
-        self.D = len(self.lb)
+        # dim, the dimension of question and each firefly will random place position in this landscape
+        self.dim = len(self.lb)
 
         # all fireflies, depended on population n
-        self.fireflies = Chromosome.new_pop(self.D, self.n)
-        self.last_best = Chromosome.__new__(Chromosome, self.D)
+        self.fireflies = Chromosome.new_pop(self.dim, self.n)
+        self.last_best = Chromosome.__new__(Chromosome, self.dim)
 
     cdef inline void initialize(self):
         cdef uint i, j
@@ -89,7 +84,7 @@ cdef class Firefly(AlgorithmBase):
         for i in range(self.n):
             # initialize the Chromosome
             tmp = self.fireflies[i]
-            for j in range(self.D):
+            for j in range(self.dim):
                 tmp.v[j] = rand_v(self.lb[j], self.ub[j])
 
         self.evaluate()
@@ -108,7 +103,7 @@ cdef class Firefly(AlgorithmBase):
                 is_move |= self.move_firefly(tmp, other)
             if is_move:
                 continue
-            for i in range(self.D):
+            for i in range(self.dim):
                 scale = self.ub[i] - self.lb[i]
                 tmp_v = tmp.v[i] + self.alpha * scale * rand_v(-0.5, 0.5)
                 tmp.v[i] = self.check(i, tmp_v)

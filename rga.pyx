@@ -9,8 +9,8 @@ license: AGPL
 email: pyslvs@gmail.com
 """
 
-from libc.math cimport pow, HUGE_VAL
 cimport cython
+from libc.math cimport pow, HUGE_VAL
 from .verify cimport (
     MAX_GEN,
     rand_v,
@@ -28,8 +28,8 @@ cdef class Genetic(AlgorithmBase):
 
     """Algorithm class."""
 
-    cdef uint nParm, nPop
-    cdef double pCross, pMute, pWin, bDelta
+    cdef uint parm_num, pop_num
+    cdef double cross, mute, win, delta
     cdef Chromosome[:] chromosome, new_chromosome
 
     def __cinit__(
@@ -41,25 +41,25 @@ cdef class Genetic(AlgorithmBase):
     ):
         """
         settings = {
-            'nPop': int,
-            'pCross': float,
-            'pMute': float,
-            'pWin': float,
-            'bDelta': float,
+            'pop_num': int,
+            'cross': float,
+            'mute': float,
+            'win': float,
+            'delta': float,
             'max_gen': int or 'min_fit': float or 'max_time': float,
             'report': int,
         }
         """
-        self.nPop = settings.get('nPop', 500)
-        self.pCross = settings.get('pCross', 0.95)
-        self.pMute = settings.get('pMute', 0.05)
-        self.pWin = settings.get('pWin', 0.95)
-        self.bDelta = settings.get('bDelta', 5.)
-        self.nParm = len(self.lb)
+        self.pop_num = settings.get('pop_num', 500)
+        self.cross = settings.get('cross', 0.95)
+        self.mute = settings.get('mute', 0.05)
+        self.win = settings.get('win', 0.95)
+        self.delta = settings.get('delta', 5.)
+        self.parm_num = len(self.lb)
 
-        self.chromosome = Chromosome.new_pop(self.nParm, self.nPop)
-        self.new_chromosome = Chromosome.new_pop(self.nParm, self.nPop)
-        self.last_best = Chromosome.__new__(Chromosome, self.nParm)
+        self.chromosome = Chromosome.new_pop(self.parm_num, self.pop_num)
+        self.new_chromosome = Chromosome.new_pop(self.parm_num, self.pop_num)
+        self.last_best = Chromosome.__new__(Chromosome, self.parm_num)
 
     cdef inline double check(self, int i, double v):
         """If a variable is out of bound, replace it with a random value."""
@@ -70,9 +70,9 @@ cdef class Genetic(AlgorithmBase):
     cdef inline void initialize(self):
         cdef uint i, j
         cdef Chromosome tmp
-        for i in range(self.nPop):
+        for i in range(self.pop_num):
             tmp = self.chromosome[i]
-            for j in range(self.nParm):
+            for j in range(self.parm_num):
                 tmp.v[j] = rand_v(self.lb[j], self.ub[j])
 
         tmp = self.chromosome[0]
@@ -81,19 +81,19 @@ cdef class Genetic(AlgorithmBase):
         self.fitness()
 
     cdef inline void cross_over(self):
-        cdef Chromosome c1 = Chromosome.__new__(Chromosome, self.nParm)
-        cdef Chromosome c2 = Chromosome.__new__(Chromosome, self.nParm)
-        cdef Chromosome c3 = Chromosome.__new__(Chromosome, self.nParm)
+        cdef Chromosome c1 = Chromosome.__new__(Chromosome, self.parm_num)
+        cdef Chromosome c2 = Chromosome.__new__(Chromosome, self.parm_num)
+        cdef Chromosome c3 = Chromosome.__new__(Chromosome, self.parm_num)
 
         cdef uint i, s
         cdef Chromosome b1, b2
-        for i in range(0, <uint>(self.nPop - 1), 2):
-            if not rand_v() < self.pCross:
+        for i in range(0, <uint>(self.pop_num - 1), 2):
+            if not rand_v() < self.cross:
                 continue
 
             b1 = self.chromosome[i]
             b2 = self.chromosome[i + 1]
-            for s in range(self.nParm):
+            for s in range(self.parm_num):
                 # first baby, half father half mother
                 c1.v[s] = 0.5 * b1.v[s] + 0.5 * b2.v[s]
                 # second baby, three quarters of father and quarter of mother
@@ -115,18 +115,18 @@ cdef class Genetic(AlgorithmBase):
             b1.assign(c1)
             b2.assign(c2)
 
-    cdef inline double delta(self, double y):
+    cdef inline double get_delta(self, double y):
         cdef double r
         if self.stop_at == MAX_GEN and self.stop_at_i > 0:
             r = <double>self.gen / self.stop_at_i
         else:
             r = 1
-        return y * rand_v() * pow(1.0 - r, self.bDelta)
+        return y * rand_v() * pow(1.0 - r, self.delta)
 
     cdef inline void fitness(self):
         cdef uint i
         cdef Chromosome tmp
-        for i in range(self.nPop):
+        for i in range(self.pop_num):
             tmp = self.chromosome[i]
             tmp.f = self.func.fitness(tmp.v)
 
@@ -143,37 +143,37 @@ cdef class Genetic(AlgorithmBase):
     cdef inline void mutate(self):
         cdef uint i, s
         cdef Chromosome tmp
-        for i in range(self.nPop):
-            if not rand_v() < self.pMute:
+        for i in range(self.pop_num):
+            if not rand_v() < self.mute:
                 continue
-            s = rand_i(self.nParm)
+            s = rand_i(self.parm_num)
             tmp = self.chromosome[i]
             if rand_v() < 0.5:
-                tmp.v[s] += self.delta(self.ub[s] - tmp.v[s])
+                tmp.v[s] += self.get_delta(self.ub[s] - tmp.v[s])
             else:
-                tmp.v[s] -= self.delta(tmp.v[s] - self.lb[s])
+                tmp.v[s] -= self.get_delta(tmp.v[s] - self.lb[s])
 
     cdef inline void select(self):
         """roulette wheel selection"""
         cdef uint i, j, k
         cdef Chromosome baby, b1, b2
-        for i in range(self.nPop):
-            j = rand_i(self.nPop)
-            k = rand_i(self.nPop)
+        for i in range(self.pop_num):
+            j = rand_i(self.pop_num)
+            k = rand_i(self.pop_num)
             b1 = self.chromosome[j]
             b2 = self.chromosome[k]
             baby = self.new_chromosome[i]
-            if b1.f > b2.f and rand_v() < self.pWin:
+            if b1.f > b2.f and rand_v() < self.win:
                 baby.assign(b2)
             else:
                 baby.assign(b1)
         # in this stage, new_chromosome is select finish
         # now replace origin chromosome
-        for i in range(self.nPop):
+        for i in range(self.pop_num):
             baby = self.chromosome[i]
             baby.assign(self.new_chromosome[i])
         # select random one chromosome to be best chromosome, make best chromosome still exist
-        baby = self.chromosome[rand_i(self.nPop)]
+        baby = self.chromosome[rand_i(self.pop_num)]
         baby.assign(self.last_best)
 
     cdef inline void generation_process(self):
