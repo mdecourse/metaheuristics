@@ -18,12 +18,12 @@ from libc.time cimport time
 
 
 cdef inline double rand_v(double lower = 0., double upper = 1.) nogil:
-    """Random real value between [lower, upper]."""
+    """Random real value between lower <= r <= upper."""
     return lower + <double>rand() / RAND_MAX * (upper - lower)
 
 
 cdef inline uint rand_i(int upper) nogil:
-    """Random integer between [0, upper]."""
+    """A random integer between 0 <= r < upper."""
     return rand() % upper
 
 
@@ -45,7 +45,7 @@ cdef class Chromosome:
         self.v[:] = other.v
 
     @staticmethod
-    cdef ndarray[object, ndim=1] new_pop(uint d, uint n):
+    cdef Chromosome[:] new_pop(uint d, uint n):
         """Create new population."""
         return np_array([Chromosome.__new__(Chromosome, d) for _ in range(n)])
 
@@ -54,15 +54,15 @@ cdef class Verification:
 
     """Verification function class base."""
 
-    cdef ndarray[double, ndim=1] get_upper(self):
+    cdef double[:] get_upper(self):
         """Return upper bound."""
         raise NotImplementedError
 
-    cdef ndarray[double, ndim=1] get_lower(self):
+    cdef double[:] get_lower(self):
         """Return lower bound."""
         raise NotImplementedError
 
-    cdef double fitness(self, ndarray[double, ndim=1] v):
+    cdef double fitness(self, double[:] v):
         """Calculate the fitness.
 
         Usage:
@@ -71,7 +71,7 @@ cdef class Verification:
         """
         raise NotImplementedError
 
-    cpdef object result(self, ndarray[double, ndim=1] v):
+    cpdef object result(self, double[:] v):
         """Show the result."""
         raise NotImplementedError
 

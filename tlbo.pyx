@@ -52,20 +52,20 @@ cdef class TeachingLearning(AlgorithmBase):
         """Initial population: Sorted students."""
         cdef ndarray[double, ndim=2] s = zeros((self.class_size, self.dim + 1), dtype=np_float)
         cdef uint i, j
-        cdef Chromosome tmp
         for i in range(self.class_size):
             for j in range(self.dim):
                 s[i, j] = rand_v(self.lb[j], self.ub[j])
-            s[i, -1] = self.func.fitness(s[i, :self.dim])
+            s[i, -1] = self.func.fitness(s[i, :-1])
         s = s[s[:, -1].argsort()][::-1]
         for i in range(self.class_size):
-            self.students[i].v[:] = s[i, :self.dim]
+            self.students[i].v = s[i, :-1]
             self.students[i].f = s[i, -1]
         self.last_best.assign(self.students[-1])
 
-    cdef inline void teaching(self, Chromosome student):
+    cdef inline void teaching(self, uint index):
         """Teaching phase. The last best is the teacher."""
-        cdef ndarray[double, ndim=1] v = zeros(self.dim, dtype=np_float)
+        cdef Chromosome student = self.students[index]
+        cdef double[:] v = zeros(self.dim, dtype=np_float)
         cdef double tf = round(1 + rand_v())
         cdef uint i
         cdef double mean
@@ -84,18 +84,19 @@ cdef class TeachingLearning(AlgorithmBase):
                 v[i] = self.ub[i]
         cdef double f_new = self.func.fitness(v)
         if f_new < student.f:
-            student.v = v
+            student.v[:] = v
             student.f = f_new
         if student.f < self.last_best.f:
             self.last_best.assign(student)
 
-    cdef inline void learning(self, uint index, Chromosome student_a):
+    cdef inline void learning(self, uint index):
         """Learning phase."""
-        cdef uint cmp_index = rand_i(self.class_size)
-        while cmp_index == index:
-            cmp_index = rand_i(self.class_size)
+        cdef Chromosome student_a = self.students[index]
+        cdef uint cmp_index = rand_i(self.class_size - 1)
+        if cmp_index >= index:
+            cmp_index += 1
         cdef Chromosome student_b = self.students[cmp_index]
-        cdef ndarray[double, ndim=1] v = zeros(self.dim, dtype=np_float)
+        cdef double[:] v = zeros(self.dim, dtype=np_float)
         cdef uint i
         cdef double diff
         for i in range(self.dim):
@@ -112,7 +113,7 @@ cdef class TeachingLearning(AlgorithmBase):
                 v[i] = self.ub[i]
         cdef double f_new = self.func.fitness(v)
         if f_new < student_a.f:
-            student_a.v = v
+            student_a.v[:] = v
             student_a.f = f_new
         if student_a.f < self.last_best.f:
             self.last_best.assign(student_a)
@@ -128,9 +129,8 @@ cdef class TeachingLearning(AlgorithmBase):
     cdef inline void generation_process(self):
         """The process of each generation."""
         cdef uint i
-        cdef Chromosome student
-        for i, student in enumerate(self.students):
+        for i in range(self.class_size):
             if self.state_check():
                 break
-            self.teaching(student)
-            self.learning(i, student)
+            self.teaching(i)
+            self.learning(i)

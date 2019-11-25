@@ -10,8 +10,6 @@ license: AGPL
 email: pyslvs@gmail.com
 """
 
-from numpy cimport ndarray
-
 ctypedef unsigned int uint
 
 cdef enum stop_option:
@@ -20,24 +18,23 @@ cdef enum stop_option:
     MAX_TIME
     SLOW_DOWN
 
-
 cdef double rand_v(double lower = *, double upper = *) nogil
 cdef uint rand_i(int upper) nogil
 
 
 cdef class Chromosome:
     cdef double f
-    cdef ndarray v
+    cdef double[:] v
     cdef void assign(self, Chromosome obj)
     @staticmethod
-    cdef ndarray[object, ndim=1] new_pop(uint d, uint n)
+    cdef Chromosome[:] new_pop(uint d, uint n)
 
 
 cdef class Verification:
-    cdef ndarray[double, ndim=1] get_upper(self)
-    cdef ndarray[double, ndim=1] get_lower(self)
-    cdef double fitness(self, ndarray[double, ndim=1] v)
-    cpdef object result(self, ndarray[double, ndim=1] v)
+    cdef double[:] get_upper(self)
+    cdef double[:] get_lower(self)
+    cdef double fitness(self, double[:] v)
+    cpdef object result(self, double[:] v)
 
 
 cdef class AlgorithmBase:
