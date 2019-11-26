@@ -67,15 +67,15 @@ cdef class TeachingLearning(AlgorithmBase):
         cdef Chromosome student = self.students[index]
         cdef double[:] v = zeros(self.dim, dtype=np_float)
         cdef double tf = round(1 + rand_v())
-        cdef uint i
+        cdef uint i, j
         cdef double mean
         cdef Chromosome tmp
         for i in range(self.dim):
             if self.state_check():
                 return
             mean = 0
-            for tmp in self.students:
-                mean += tmp.v[i]
+            for j in range(self.class_size):
+                mean += self.students[j].v[i]
             mean /= self.dim
             v[i] = student.v[i] + rand_v(1, self.dim) * (self.last_best.v[i] - tf * mean)
             if v[i] < self.lb[i]:
