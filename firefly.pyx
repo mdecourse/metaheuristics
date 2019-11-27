@@ -11,10 +11,10 @@ email: pyslvs@gmail.com
 
 cimport cython
 from libc.math cimport exp, log10, sqrt, HUGE_VAL
-from .verify cimport (
+from .utility cimport (
     rand_v,
     Chromosome,
-    Verification,
+    Objective,
     AlgorithmBase,
 )
 
@@ -43,7 +43,7 @@ cdef class Firefly(AlgorithmBase):
 
     def __cinit__(
         self,
-        Verification func,
+        Objective func,
         dict settings,
         object progress_fun=None,
         object interrupt_fun=None

@@ -12,11 +12,11 @@ email: pyslvs@gmail.com
 cimport cython
 from numpy cimport ndarray
 from numpy import zeros, float64 as np_float
-from .verify cimport (
+from .utility cimport (
     rand_v,
     rand_i,
     Chromosome,
-    Verification,
+    Objective,
     AlgorithmBase,
 )
 
@@ -33,7 +33,7 @@ cdef class TeachingLearning(AlgorithmBase):
 
     def __cinit__(
         self,
-        Verification func,
+        Objective func,
         dict settings,
         object progress_fun=None,
         object interrupt_fun=None

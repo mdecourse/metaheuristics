@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from .verify import AlgorithmBase
+from .utility import AlgorithmBase
 
 class TeachingLearning(AlgorithmBase):
     """Algorithm class."""

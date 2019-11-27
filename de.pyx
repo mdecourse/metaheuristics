@@ -10,11 +10,11 @@ email: pyslvs@gmail.com
 """
 
 cimport cython
-from .verify cimport (
+from .utility cimport (
     rand_v,
     rand_i,
     Chromosome,
-    Verification,
+    Objective,
     AlgorithmBase,
 )
 
@@ -47,7 +47,7 @@ cdef class Differential(AlgorithmBase):
 
     def __cinit__(
         self,
-        Verification func,
+        Objective func,
         dict settings,
         object progress_fun=None,
         object interrupt_fun=None

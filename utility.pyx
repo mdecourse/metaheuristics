@@ -2,7 +2,7 @@
 # cython: language_level=3, embedsignature=True, cdivision=True
 
 """The callable class of the validation in algorithm.
-The 'verify' module should be loaded when using sub-class of base classes.
+The 'utility' module should be loaded when using sub-class of base classes.
 
 author: Yuan Chang
 copyright: Copyright (C) 2016-2019
@@ -50,15 +50,15 @@ cdef class Chromosome:
         return np_array([Chromosome.__new__(Chromosome, d) for _ in range(n)])
 
 
-cdef class Verification:
+cdef class Objective:
 
-    """Verification function class base."""
+    """Objective function class base."""
 
-    cdef double[:] get_upper(self):
+    cpdef double[:] get_upper(self):
         """Return upper bound."""
         raise NotImplementedError
 
-    cdef double[:] get_lower(self):
+    cpdef double[:] get_lower(self):
         """Return lower bound."""
         raise NotImplementedError
 
@@ -66,7 +66,7 @@ cdef class Verification:
         """Calculate the fitness.
 
         Usage:
-        f = MyVerification()
+        f = MyObjective()
         fitness = f(chromosome.v)
         """
         raise NotImplementedError
@@ -82,7 +82,7 @@ cdef class AlgorithmBase:
 
     def __cinit__(
         self,
-        Verification func,
+        Objective func,
         dict settings,
         object progress_fun=None,
         object interrupt_fun=None
@@ -135,7 +135,11 @@ cdef class AlgorithmBase:
         """Report generation, fitness and time."""
         self.fitness_time.append((self.gen, self.last_best.f, process_time() - self.time_start))
 
-    cpdef tuple run(self):
+    cpdef list history(self):
+        """Return the history of the process."""
+        return self.fitness_time
+
+    cpdef object run(self):
         """Init and run GA for max_gen times."""
         self.time_start = process_time()
         self.initialize()
@@ -170,4 +174,4 @@ cdef class AlgorithmBase:
             if (self.interrupt_fun is not None) and self.interrupt_fun():
                 break
         self.report()
-        return self.func.result(self.last_best.v), self.fitness_time
+        return self.func.result(self.last_best.v)

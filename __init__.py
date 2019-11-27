@@ -3,14 +3,14 @@
 """Kernel of Metaheuristic Algorithm."""
 
 from enum import unique, Enum
-from .verify import Verification, AlgorithmBase
+from .utility import Objective, AlgorithmBase
 from .rga import Genetic
 from .firefly import Firefly
 from .de import Differential
 from .tlbo import TeachingLearning
 
 __all__ = [
-    'Verification',
+    'Objective',
     'AlgorithmBase',
     'Genetic',
     'Firefly',

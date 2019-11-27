@@ -11,12 +11,12 @@ email: pyslvs@gmail.com
 
 cimport cython
 from libc.math cimport pow, HUGE_VAL
-from .verify cimport (
+from .utility cimport (
     MAX_GEN,
     rand_v,
     rand_i,
     Chromosome,
-    Verification,
+    Objective,
     AlgorithmBase,
 )
 
@@ -34,7 +34,7 @@ cdef class Genetic(AlgorithmBase):
 
     def __cinit__(
         self,
-        Verification func,
+        Objective func,
         dict settings,
         object progress_fun=None,
         object interrupt_fun=None
