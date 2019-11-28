@@ -33,6 +33,10 @@ class AlgorithmBase(Generic[FVal]):
 
     func: Objective[FVal]
 
+    def __class_getitem__(cls, item):
+        # PEP 560
+        raise NotImplemented
+
     def __init__(
         self,
         func: Objective[FVal],
