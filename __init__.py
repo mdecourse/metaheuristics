@@ -2,7 +2,7 @@
 
 """Kernel of Metaheuristic Algorithm."""
 
-from typing import Dict, Union
+from typing import Dict, Union, Type
 from enum import unique, Enum
 from .utility import Objective, AlgorithmBase
 from .rga import Genetic
@@ -13,11 +13,8 @@ from .tlbo import TeachingLearning
 __all__ = [
     'Objective',
     'AlgorithmBase',
-    'Genetic',
-    'Firefly',
-    'Differential',
-    'TeachingLearning',
     'AlgorithmType',
+    'ALGORITHM',
     'PARAMS',
     'DEFAULT_PARAMS',
 ]
@@ -33,10 +30,13 @@ class AlgorithmType(str, Enum):
     DE = "Differential Evolution"
     TLBO = "Teaching Learning Based Optimization"
 
-    def __str__(self) -> str:
-        return str(self.value)
 
-
+ALGORITHM: Dict[AlgorithmType, Type[AlgorithmBase]] = {
+    AlgorithmType.RGA: Genetic,
+    AlgorithmType.Firefly: Firefly,
+    AlgorithmType.DE: Differential,
+    AlgorithmType.TLBO: TeachingLearning,
+}
 PARAMS: Dict[AlgorithmType, Dict[str, Union[int, float]]] = {
     AlgorithmType.RGA: {
         'nPop': 500,
