@@ -2,6 +2,7 @@
 
 """Kernel of Metaheuristic Algorithm."""
 
+from typing import Dict, Union
 from enum import unique, Enum
 from .utility import Objective, AlgorithmBase
 from .rga import Genetic
@@ -23,7 +24,8 @@ __all__ = [
 
 
 @unique
-class AlgorithmType(Enum):
+class AlgorithmType(str, Enum):
+
     """Enum type of algorithms."""
 
     RGA = "Real-coded Genetic Algorithm"
@@ -35,7 +37,7 @@ class AlgorithmType(Enum):
         return str(self.value)
 
 
-PARAMS = {
+PARAMS: Dict[AlgorithmType, Dict[str, Union[int, float]]] = {
     AlgorithmType.RGA: {
         'nPop': 500,
         'pCross': 0.95,
