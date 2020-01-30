@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# cython: language_level=3, embedsignature=True, cdivision=True
+# cython: language_level=3, cdivision=True
 
 """The callable class of the validation in algorithm.
 The 'utility' module should be loaded when using sub-class of base classes.
