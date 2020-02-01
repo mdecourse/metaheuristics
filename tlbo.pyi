@@ -3,4 +3,4 @@
 from .utility import AlgorithmBase
 
 class TeachingLearning(AlgorithmBase):
-    """Algorithm class."""
+    """Teaching Learning Based Optimization class."""

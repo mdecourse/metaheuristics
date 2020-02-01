@@ -55,24 +55,15 @@ cdef class Objective:
     """Objective function class base."""
 
     cpdef double[:] get_upper(self):
-        """Return upper bound."""
         raise NotImplementedError
 
     cpdef double[:] get_lower(self):
-        """Return lower bound."""
         raise NotImplementedError
 
     cdef double fitness(self, double[:] v):
-        """Calculate the fitness.
-
-        Usage:
-        f = MyObjective()
-        fitness = f(chromosome.v)
-        """
         raise NotImplementedError
 
     cpdef object result(self, double[:] v):
-        """Show the result."""
         raise NotImplementedError
 
 

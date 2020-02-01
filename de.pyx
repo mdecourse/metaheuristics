@@ -38,8 +38,6 @@ cdef enum Strategy:
 @cython.final
 cdef class Differential(AlgorithmBase):
 
-    """Algorithm class."""
-
     cdef Strategy strategy
     cdef uint np, r1, r2, r3, r4, r5
     cdef double F, CR

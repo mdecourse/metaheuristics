@@ -3,4 +3,4 @@
 from .utility import AlgorithmBase
 
 class Differential(AlgorithmBase):
-    """Algorithm class."""
+    """Differential Evolution class."""

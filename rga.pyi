@@ -3,4 +3,4 @@
 from .utility import AlgorithmBase
 
 class Genetic(AlgorithmBase):
-    """Algorithm class."""
+    """Real-coded Genetic Algorithm class."""

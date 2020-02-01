@@ -3,4 +3,4 @@
 from .utility import AlgorithmBase
 
 class Firefly(AlgorithmBase):
-    """Algorithm class."""
+    """Firefly Algorithm class."""
