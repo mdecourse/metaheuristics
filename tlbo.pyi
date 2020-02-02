@@ -1,6 +1,36 @@
 # -*- coding: utf-8 -*-
 
-from .utility import AlgorithmBase
+from typing import Dict, Callable, Optional, Any
+from .utility import AlgorithmBase, Objective, FVal
 
 class TeachingLearning(AlgorithmBase):
-    """Teaching Learning Based Optimization class."""
+
+    """The implementation of Teaching Learning Based Optimization."""
+
+    def __init__(
+        self,
+        func: Objective[FVal],
+        settings: Dict[str, Any],
+        progress_fun: Optional[Callable[[int, str], None]] = None,
+        interrupt_fun: Optional[Callable[[], bool]] = None
+    ):
+        """The format of argument `settings`:
+
+        + `class_size`: The number of students per class
+            + type: int
+            + default: 50
+        + `max_gen` or `min_fit` or `max_time`: Limitation of termination
+            + type: int / float / float
+            + default: Raise `ValueError`
+        + `report`: Report per generation
+            + type: int
+            + default: 10
+
+        Others arguments are same as [`Differential.__init__()`](#differential9595init__).
+        """
+        super(TeachingLearning, self).__init__(...)
+        ...
+
+    def run(self) -> FVal:
+        """Run the algorithm and get the result."""
+        ...

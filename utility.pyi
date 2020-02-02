@@ -50,6 +50,7 @@ class AlgorithmBase(Generic[FVal]):
         # PEP 560
         raise NotImplemented
 
+    @abstractmethod
     def __init__(
         self,
         func: Objective[FVal],
@@ -76,6 +77,7 @@ class AlgorithmBase(Generic[FVal]):
         """
         ...
 
+    @abstractmethod
     def run(self) -> FVal:
         """Run and return the result and convergence history.
 
