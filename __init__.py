@@ -2,14 +2,6 @@
 
 """Kernel of Metaheuristic Algorithm."""
 
-from typing import Dict, Union, Type
-from enum import unique, Enum
-from .utility import Objective, AlgorithmBase
-from .rga import Genetic
-from .firefly import Firefly
-from .de import Differential
-from .tlbo import TeachingLearning
-
 __all__ = [
     'Objective',
     'AlgorithmBase',
@@ -18,6 +10,18 @@ __all__ = [
     'PARAMS',
     'DEFAULT_PARAMS',
 ]
+__author__ = "Yuan Chang"
+__copyright__ = "Copyright (C) 2016-2020"
+__license__ = "AGPL"
+__email__ = "pyslvs@gmail.com"
+
+from typing import Dict, Union, Type
+from enum import unique, Enum
+from .utility import Objective, AlgorithmBase
+from .rga import Genetic
+from .firefly import Firefly
+from .de import Differential
+from .tlbo import TeachingLearning
 
 
 @unique
