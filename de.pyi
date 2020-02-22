@@ -5,8 +5,6 @@ from .utility import AlgorithmBase, Objective, FVal
 
 class Differential(AlgorithmBase):
 
-    """The implementation of Differential Evolution."""
-
     def __init__(
         self,
         func: Objective[FVal],
@@ -46,8 +44,4 @@ class Differential(AlgorithmBase):
         and the argument `interrupt_fun` will check the interrupt status from GUI or subprocess.
         """
         super(Differential, self).__init__(...)
-        ...
-
-    def run(self) -> FVal:
-        """Run the algorithm and get the result."""
         ...

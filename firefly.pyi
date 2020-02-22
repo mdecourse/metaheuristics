@@ -5,8 +5,6 @@ from .utility import AlgorithmBase, Objective, FVal
 
 class Firefly(AlgorithmBase):
 
-    """The implementation of Firefly Algorithm."""
-
     def __init__(
         self,
         func: Objective[FVal],
@@ -41,8 +39,4 @@ class Firefly(AlgorithmBase):
         Others arguments are same as [`Differential.__init__()`](#differential9595init__).
         """
         super(Firefly, self).__init__(...)
-        ...
-
-    def run(self) -> FVal:
-        """Run the algorithm and get the result."""
         ...

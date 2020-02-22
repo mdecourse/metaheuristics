@@ -26,9 +26,7 @@ from .tlbo import TeachingLearning
 
 @unique
 class AlgorithmType(str, Enum):
-
     """Enum type of algorithms."""
-
     RGA = "Real-coded Genetic Algorithm"
     Firefly = "Firefly Algorithm"
     DE = "Differential Evolution"

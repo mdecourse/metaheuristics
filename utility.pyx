@@ -52,24 +52,34 @@ cdef class Chromosome:
 
 cdef class Objective:
 
-    """Objective function class base."""
+    """Objective function base class.
+
+    It is used to build the objective function for Metaheuristic Random
+    Algorithms.
+    """
 
     cpdef double[:] get_upper(self):
+        """Return upper bound."""
         raise NotImplementedError
 
     cpdef double[:] get_lower(self):
+        """Return lower bound."""
         raise NotImplementedError
 
     cdef double fitness(self, double[:] v):
         raise NotImplementedError
 
     cpdef object result(self, double[:] v):
+        """Return the result from the variable list `v`."""
         raise NotImplementedError
 
 
 cdef class AlgorithmBase:
 
-    """Algorithm base class."""
+    """Algorithm base class.
+
+    It is used to build the Metaheuristic Random Algorithms.
+    """
 
     def __cinit__(
         self,
@@ -124,14 +134,32 @@ cdef class AlgorithmBase:
 
     cdef inline void report(self):
         """Report generation, fitness and time."""
-        self.fitness_time.append((self.gen, self.last_best.f, process_time() - self.time_start))
+        self.fitness_time.append((
+            self.gen,
+            self.last_best.f,
+            process_time() - self.time_start,
+        ))
 
     cpdef list history(self):
-        """Return the history of the process."""
+        """Return the history of the process.
+
+        The first value is generation (iteration);
+        the second value is fitness;
+        the third value is time in second.
+        """
         return self.fitness_time
 
     cpdef object run(self):
-        """Init and run GA for max_gen times."""
+        """Run and return the result and convergence history.
+
+        The first place of `return` is came from
+        calling [`Objective.result()`](#objectiveresult).
+
+        The second place of `return` is a list of generation data,
+        which type is `Tuple[int, float, float]]`.
+        The first of them is generation,
+        the second is fitness, and the last one is time in second.
+        """
         self.time_start = process_time()
         self.initialize()
         self.report()

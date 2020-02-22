@@ -5,8 +5,6 @@ from .utility import AlgorithmBase, Objective, FVal
 
 class Genetic(AlgorithmBase):
 
-    """The implementation of Real-coded Genetic Algorithm."""
-
     def __init__(
         self,
         func: Objective[FVal],
@@ -41,8 +39,4 @@ class Genetic(AlgorithmBase):
         Others arguments are same as [`Differential.__init__()`](#differential9595init__).
         """
         super(Genetic, self).__init__(...)
-        ...
-
-    def run(self) -> FVal:
-        """Run the algorithm and get the result."""
         ...
