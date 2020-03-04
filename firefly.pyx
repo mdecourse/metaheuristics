@@ -34,9 +34,7 @@ cdef double _distance(Chromosome me, Chromosome she, uint dim):
 
 @cython.final
 cdef class Firefly(AlgorithmBase):
-
     """The implementation of Firefly Algorithm."""
-
     cdef uint n
     cdef double alpha, alpha0, beta_min, beta0, gamma
     cdef Chromosome[:] fireflies

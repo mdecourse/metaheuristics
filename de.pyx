@@ -37,9 +37,7 @@ cdef enum Strategy:
 
 @cython.final
 cdef class Differential(AlgorithmBase):
-
     """The implementation of Differential Evolution."""
-
     cdef Strategy strategy
     cdef uint np, r1, r2, r3, r4, r5
     cdef double F, CR

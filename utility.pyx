@@ -30,7 +30,6 @@ cdef inline uint rand_i(int upper) nogil:
 @cython.final
 @cython.freelist(100)
 cdef class Chromosome:
-
     """Data structure class."""
 
     def __cinit__(self, uint n):

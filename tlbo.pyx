@@ -25,9 +25,7 @@ ctypedef unsigned int uint
 
 @cython.final
 cdef class TeachingLearning(AlgorithmBase):
-
     """The implementation of Teaching Learning Based Optimization."""
-
     cdef uint class_size
     cdef Chromosome[:] students
 

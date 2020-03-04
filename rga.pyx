@@ -25,9 +25,7 @@ ctypedef unsigned int uint
 
 @cython.final
 cdef class Genetic(AlgorithmBase):
-
     """The implementation of Real-coded Genetic Algorithm."""
-
     cdef uint pop_num
     cdef double cross, mute, win, delta
     cdef Chromosome[:] chromosome, new_chromosome
