@@ -50,7 +50,6 @@ cdef class Chromosome:
 
 
 cdef class Objective:
-
     """Objective function base class.
 
     It is used to build the objective function for Metaheuristic Random
@@ -74,7 +73,6 @@ cdef class Objective:
 
 
 cdef class AlgorithmBase:
-
     """Algorithm base class.
 
     It is used to build the Metaheuristic Random Algorithms.
