@@ -11,7 +11,7 @@ email: pyslvs@gmail.com
 """
 
 from time import process_time
-from numpy import zeros, array as np_array, float64 as np_float
+from numpy import zeros, array, float64 as np_float
 cimport cython
 from libc.stdlib cimport rand, srand, RAND_MAX
 from libc.time cimport time
@@ -46,7 +46,7 @@ cdef class Chromosome:
     @staticmethod
     cdef Chromosome[:] new_pop(uint d, uint n):
         """Create new population."""
-        return np_array([Chromosome.__new__(Chromosome, d) for _ in range(n)])
+        return array([Chromosome.__new__(Chromosome, d) for _ in range(n)])
 
 
 cdef class Objective:
