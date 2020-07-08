@@ -16,7 +16,7 @@ from .utility cimport (
     rand_v,
     rand_i,
     Chromosome,
-    Objective,
+    ObjFunc,
     AlgorithmBase,
 )
 
@@ -31,7 +31,7 @@ cdef class TeachingLearning(AlgorithmBase):
 
     def __cinit__(
         self,
-        Objective func,
+        ObjFunc func,
         dict settings,
         object progress_fun=None,
         object interrupt_fun=None
@@ -119,7 +119,7 @@ cdef class TeachingLearning(AlgorithmBase):
     cdef inline bint state_check(self):
         """Check status."""
         if self.progress_fun is not None:
-            self.progress_fun(self.gen, f"{self.last_best.f:.04f}")
+            self.progress_fun(self.func.gen, f"{self.last_best.f:.04f}")
         if (self.interrupt_fun is not None) and self.interrupt_fun():
             return True
         return False

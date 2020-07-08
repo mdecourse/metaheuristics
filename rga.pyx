@@ -16,7 +16,7 @@ from .utility cimport (
     rand_v,
     rand_i,
     Chromosome,
-    Objective,
+    ObjFunc,
     AlgorithmBase,
 )
 
@@ -32,7 +32,7 @@ cdef class Genetic(AlgorithmBase):
 
     def __cinit__(
         self,
-        Objective func,
+        ObjFunc func,
         dict settings,
         object progress_fun=None,
         object interrupt_fun=None
@@ -111,7 +111,7 @@ cdef class Genetic(AlgorithmBase):
     cdef inline double get_delta(self, double y):
         cdef double r
         if self.stop_at == MAX_GEN and self.stop_at_i > 0:
-            r = <double>self.gen / self.stop_at_i
+            r = <double>self.func.gen / self.stop_at_i
         else:
             r = 1
         return y * rand_v() * pow(1.0 - r, self.delta)

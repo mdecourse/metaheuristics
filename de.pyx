@@ -14,7 +14,7 @@ from .utility cimport (
     rand_v,
     rand_i,
     Chromosome,
-    Objective,
+    ObjFunc,
     AlgorithmBase,
 )
 
@@ -45,7 +45,7 @@ cdef class Differential(AlgorithmBase):
 
     def __cinit__(
         self,
-        Objective func,
+        ObjFunc func,
         dict settings,
         object progress_fun=None,
         object interrupt_fun=None

@@ -25,12 +25,15 @@ cdef uint rand_i(int upper) nogil
 cdef class Chromosome:
     cdef double f
     cdef double[:] v
+
     cdef void assign(self, Chromosome obj)
     @staticmethod
     cdef Chromosome[:] new_pop(uint d, uint n)
 
 
-cdef class Objective:
+cdef class ObjFunc:
+    cdef uint gen
+
     cpdef double[:] get_upper(self)
     cpdef double[:] get_lower(self)
     cdef double fitness(self, double[:] v)
@@ -38,9 +41,8 @@ cdef class Objective:
 
 
 cdef class AlgorithmBase:
-
-    cdef public Objective func
-    cdef uint dim, stop_at_i, gen, rpt
+    cdef public ObjFunc func
+    cdef uint dim, stop_at_i, rpt
     cdef double stop_at_f, time_start
     cdef stop_option stop_at
     cdef Chromosome last_best

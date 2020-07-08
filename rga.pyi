@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
 from typing import Dict, Callable, Optional, Any
-from .utility import AlgorithmBase, Objective, FVal
+from .utility import AlgorithmBase, ObjFunc, FVal
 
 class Genetic(AlgorithmBase):
 
     def __init__(
         self,
-        func: Objective[FVal],
+        func: ObjFunc[FVal],
         settings: Dict[str, Any],
         progress_fun: Optional[Callable[[int, str], None]] = None,
         interrupt_fun: Optional[Callable[[], bool]] = None

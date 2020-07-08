@@ -7,7 +7,7 @@ from numpy import ndarray, double
 FVal = TypeVar('FVal')
 
 
-class Objective(Generic[FVal]):
+class ObjFunc(Generic[FVal]):
 
     @abstractmethod
     def fitness(self, v: ndarray) -> double:
@@ -31,7 +31,7 @@ class Objective(Generic[FVal]):
 
 class AlgorithmBase(Generic[FVal]):
 
-    func: Objective[FVal]
+    func: ObjFunc[FVal]
 
     def __class_getitem__(cls, item):
         # PEP 560
@@ -40,12 +40,12 @@ class AlgorithmBase(Generic[FVal]):
     @abstractmethod
     def __init__(
         self,
-        func: Objective[FVal],
+        func: ObjFunc[FVal],
         settings: Dict[str, Any],
         progress_fun: Optional[Callable[[int, str], None]] = None,
         interrupt_fun: Optional[Callable[[], bool]] = None
     ):
-        """The argument `func` is a object inherit from [Objective],
+        """The argument `func` is a object inherit from [ObjFunc],
         and all abstract methods should be implemented.
 
         The format of argument `settings` can be customized.

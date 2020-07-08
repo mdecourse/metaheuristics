@@ -3,7 +3,7 @@
 """Kernel of Metaheuristic Algorithm."""
 
 __all__ = [
-    'Objective',
+    'ObjFunc',
     'AlgorithmBase',
     'AlgorithmType',
     'ALGORITHM',
@@ -17,7 +17,7 @@ __email__ = "pyslvs@gmail.com"
 
 from typing import Dict, Union, Type
 from enum import unique, Enum
-from .utility import Objective, AlgorithmBase
+from .utility import ObjFunc, AlgorithmBase
 from .rga import Genetic
 from .firefly import Firefly
 from .de import Differential

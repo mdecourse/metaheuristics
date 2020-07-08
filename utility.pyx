@@ -49,7 +49,7 @@ cdef class Chromosome:
         return array([Chromosome.__new__(Chromosome, d) for _ in range(n)])
 
 
-cdef class Objective:
+cdef class ObjFunc:
     """Objective function base class.
 
     It is used to build the objective function for Metaheuristic Random
@@ -80,7 +80,7 @@ cdef class AlgorithmBase:
 
     def __cinit__(
         self,
-        Objective func,
+        ObjFunc func,
         dict settings,
         object progress_fun=None,
         object interrupt_fun=None
@@ -117,7 +117,7 @@ cdef class AlgorithmBase:
             raise ValueError("length of upper and lower bounds must be equal")
         self.last_best = Chromosome.__new__(Chromosome, self.dim)
         # setup benchmark
-        self.gen = 0
+        self.func.gen = 0
         self.time_start = 0
         self.fitness_time = []
 
@@ -132,7 +132,7 @@ cdef class AlgorithmBase:
     cdef inline void report(self):
         """Report generation, fitness and time."""
         self.fitness_time.append((
-            self.gen,
+            self.func.gen,
             self.last_best.f,
             process_time() - self.time_start,
         ))
@@ -150,7 +150,7 @@ cdef class AlgorithmBase:
         """Run and return the result and convergence history.
 
         The first place of `return` is came from
-        calling [`Objective.result()`](#objectiveresult).
+        calling [`ObjFunc.result()`](#objectiveresult).
 
         The second place of `return` is a list of generation data,
         which type is `Tuple[int, float, float]]`.
@@ -165,12 +165,12 @@ cdef class AlgorithmBase:
         cdef double last_diff = 0
         while True:
             last_best = self.last_best.f
-            self.gen += 1
+            self.func.gen += 1
             self.generation_process()
-            if self.gen % self.rpt == 0:
+            if self.func.gen % self.rpt == 0:
                 self.report()
             if self.stop_at == MAX_GEN:
-                if self.gen >= self.stop_at_i > 0:
+                if self.func.gen >= self.stop_at_i > 0:
                     break
             elif self.stop_at == MIN_FIT:
                 if self.last_best.f <= self.stop_at_f:
@@ -185,7 +185,7 @@ cdef class AlgorithmBase:
                 last_diff = diff
             # progress
             if self.progress_fun is not None:
-                self.progress_fun(self.gen, f"{self.last_best.f:.04f}")
+                self.progress_fun(self.func.gen, f"{self.last_best.f:.04f}")
             # interrupt
             if (self.interrupt_fun is not None) and self.interrupt_fun():
                 break

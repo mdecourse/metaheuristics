@@ -14,7 +14,7 @@ from libc.math cimport exp, log10, sqrt, HUGE_VAL
 from .utility cimport (
     rand_v,
     Chromosome,
-    Objective,
+    ObjFunc,
     AlgorithmBase,
 )
 
@@ -41,7 +41,7 @@ cdef class Firefly(AlgorithmBase):
 
     def __cinit__(
         self,
-        Objective func,
+        ObjFunc func,
         dict settings,
         object progress_fun=None,
         object interrupt_fun=None
