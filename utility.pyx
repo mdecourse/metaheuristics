@@ -150,7 +150,7 @@ cdef class AlgorithmBase:
         """Run and return the result and convergence history.
 
         The first place of `return` is came from
-        calling [`ObjFunc.result()`](#objectiveresult).
+        calling [`ObjFunc.result()`](#objfuncresult).
 
         The second place of `return` is a list of generation data,
         which type is `Tuple[int, float, float]]`.
