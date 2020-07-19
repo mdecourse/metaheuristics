@@ -12,7 +12,7 @@ email: pyslvs@gmail.com
 
 ctypedef unsigned int uint
 
-cdef enum stop_option:
+cdef enum Task:
     MAX_GEN
     MIN_FIT
     MAX_TIME
@@ -44,7 +44,7 @@ cdef class AlgorithmBase:
     cdef public ObjFunc func
     cdef uint dim, stop_at_i, rpt
     cdef double stop_at_f, time_start
-    cdef stop_option stop_at
+    cdef Task stop_at
     cdef Chromosome last_best
     cdef list fitness_time
     cdef double[:] lb, ub
