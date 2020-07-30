@@ -2,14 +2,6 @@
 
 """Kernel of Metaheuristic Algorithm."""
 
-__all__ = [
-    'ObjFunc',
-    'AlgorithmBase',
-    'AlgorithmType',
-    'ALGORITHM',
-    'PARAMS',
-    'DEFAULT_PARAMS',
-]
 __author__ = "Yuan Chang"
 __copyright__ = "Copyright (C) 2016-2020"
 __license__ = "AGPL"
