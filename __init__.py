@@ -7,7 +7,7 @@ __copyright__ = "Copyright (C) 2016-2020"
 __license__ = "AGPL"
 __email__ = "pyslvs@gmail.com"
 
-from typing import Dict, Union, Type
+from typing import Mapping, Union, Type
 from enum import unique, Enum
 from .utility import ObjFunc, AlgorithmBase
 from .rga import Genetic
@@ -25,13 +25,13 @@ class AlgorithmType(str, Enum):
     TLBO = "Teaching Learning Based Optimization"
 
 
-ALGORITHM: Dict[AlgorithmType, Type[AlgorithmBase]] = {
+ALGORITHM: Mapping[AlgorithmType, Type[AlgorithmBase]] = {
     AlgorithmType.RGA: Genetic,
     AlgorithmType.Firefly: Firefly,
     AlgorithmType.DE: Differential,
     AlgorithmType.TLBO: TeachingLearning,
 }
-PARAMS: Dict[AlgorithmType, Dict[str, Union[int, float]]] = {
+PARAMS: Mapping[AlgorithmType, Mapping[str, Union[int, float]]] = {
     AlgorithmType.RGA: {
         'nPop': 500,
         'pCross': 0.95,
@@ -56,4 +56,4 @@ PARAMS: Dict[AlgorithmType, Dict[str, Union[int, float]]] = {
         'class_size': 50,
     }
 }
-DEFAULT_PARAMS = {'max_gen': 1000, 'report': 50}
+DEFAULT_PARAMS: Mapping[str, int] = {'max_gen': 1000, 'report': 50}
