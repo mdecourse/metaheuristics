@@ -37,7 +37,7 @@ class AlgorithmBase(Generic[FVal]):
         progress_fun: Optional[Callable[[int, str], None]] = None,
         interrupt_fun: Optional[Callable[[], bool]] = None
     ):
-        """The argument `func` is a object inherit from [ObjFunc],
+        """The argument `func` is an object inherit from [ObjFunc],
         and all abstract methods should be implemented.
 
         The format of argument `settings` can be customized.
