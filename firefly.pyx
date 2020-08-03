@@ -79,7 +79,7 @@ cdef class Firefly(AlgorithmBase):
             # initialize the Chromosome
             tmp = self.fireflies[i]
             for j in range(self.dim):
-                tmp.v[j] = rand_v(self.lb[j], self.ub[j])
+                tmp.v[j] = rand_v(self.func.lower[j], self.func.upper[j])
         self.evaluate()
         self.last_best.assign(self.fireflies[0])
 
@@ -97,7 +97,7 @@ cdef class Firefly(AlgorithmBase):
             if is_move:
                 continue
             for i in range(self.dim):
-                scale = self.ub[i] - self.lb[i]
+                scale = self.func.upper[i] - self.func.lower[i]
                 tmp_v = tmp.v[i] + self.alpha * scale * rand_v(-0.5, 0.5)
                 tmp.v[i] = self.check(i, tmp_v)
 
@@ -114,16 +114,16 @@ cdef class Firefly(AlgorithmBase):
         cdef uint i
         cdef double scale, me_v
         for i in range(self.dim):
-            scale = self.ub[i] - self.lb[i]
+            scale = self.func.upper[i] - self.func.lower[i]
             me_v = me.v[i] + beta * (she.v[i] - me.v[i]) + self.alpha * scale * rand_v(-0.5, 0.5)
             me.v[i] = self.check(i, me_v)
         return True
 
     cdef inline double check(self, int i, double v):
-        if v > self.ub[i]:
-            return self.ub[i]
-        elif v < self.lb[i]:
-            return self.lb[i]
+        if v > self.func.upper[i]:
+            return self.func.upper[i]
+        elif v < self.func.lower[i]:
+            return self.func.lower[i]
         else:
             return v
 

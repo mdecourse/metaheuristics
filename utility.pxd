@@ -33,9 +33,9 @@ cdef class Chromosome:
 
 cdef class ObjFunc:
     cdef uint gen
+    cdef double[:] upper
+    cdef double[:] lower
 
-    cpdef double[:] get_upper(self)
-    cpdef double[:] get_lower(self)
     cdef double fitness(self, double[:] v)
     cpdef object result(self, double[:] v)
 
@@ -47,7 +47,6 @@ cdef class AlgorithmBase:
     cdef Task stop_at
     cdef Chromosome last_best
     cdef list fitness_time
-    cdef double[:] lb, ub
     cdef object progress_fun, interrupt_fun
 
     cdef void initialize(self)

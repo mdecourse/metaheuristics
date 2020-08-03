@@ -56,14 +56,6 @@ cdef class ObjFunc:
     Algorithms.
     """
 
-    cpdef double[:] get_upper(self):
-        """Return upper bound."""
-        raise NotImplementedError
-
-    cpdef double[:] get_lower(self):
-        """Return lower bound."""
-        raise NotImplementedError
-
     cdef double fitness(self, double[:] v):
         raise NotImplementedError
 
@@ -110,10 +102,8 @@ cdef class AlgorithmBase:
             self.rpt = 10
         self.progress_fun = progress_fun
         self.interrupt_fun = interrupt_fun
-        self.lb = self.func.get_lower()
-        self.ub = self.func.get_upper()
-        self.dim = len(self.ub)
-        if self.dim != len(self.lb):
+        self.dim = len(self.func.upper)
+        if self.dim != len(self.func.lower):
             raise ValueError("length of upper and lower bounds must be equal")
         self.last_best = Chromosome.__new__(Chromosome, self.dim)
         # setup benchmark

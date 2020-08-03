@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from abc import abstractmethod
-from typing import TypeVar, Tuple, List, Dict, Callable, Optional, Generic, Any
+from typing import TypeVar, Tuple, Sequence, Dict, Callable, Optional, Generic, Any
 from numpy import ndarray, double
 
 FVal = TypeVar('FVal')
@@ -14,14 +14,6 @@ class ObjFunc(Generic[FVal]):
         """(`cdef` function) Return the fitness from the variable list `v`.
         This function will be directly called in the algorithms.
         """
-        ...
-
-    @abstractmethod
-    def get_upper(self) -> ndarray:
-        ...
-
-    @abstractmethod
-    def get_lower(self) -> ndarray:
         ...
 
     @abstractmethod
@@ -55,7 +47,7 @@ class AlgorithmBase(Generic[FVal]):
         """
         ...
 
-    def history(self) -> List[Tuple[int, float, float]]:
+    def history(self) -> Sequence[Tuple[int, float, float]]:
         ...
 
     def run(self) -> FVal:
