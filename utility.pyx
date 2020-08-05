@@ -52,8 +52,7 @@ cdef class Chromosome:
 cdef class ObjFunc:
     """Objective function base class.
 
-    It is used to build the objective function for Metaheuristic Random
-    Algorithms.
+    It is used to build the objective function for Meta-heuristic Algorithms.
     """
 
     cdef double fitness(self, double[:] v):
@@ -67,7 +66,7 @@ cdef class ObjFunc:
 cdef class AlgorithmBase:
     """Algorithm base class.
 
-    It is used to build the Metaheuristic Random Algorithms.
+    It is used to build the Meta-heuristic Algorithms.
     """
 
     def __cinit__(
@@ -102,8 +101,8 @@ cdef class AlgorithmBase:
             self.rpt = 10
         self.progress_fun = progress_fun
         self.interrupt_fun = interrupt_fun
-        self.dim = len(self.func.upper)
-        if self.dim != len(self.func.lower):
+        self.dim = len(self.func.ub)
+        if self.dim != len(self.func.lb):
             raise ValueError("length of upper and lower bounds must be equal")
         self.last_best = Chromosome.__new__(Chromosome, self.dim)
         # setup benchmark
@@ -147,6 +146,11 @@ cdef class AlgorithmBase:
         The first of them is generation,
         the second is fitness, and the last one is time in second.
         """
+        # Swap upper and lower bound if reversed
+        for i in range(len(self.func.ub)):
+            if self.func.ub[i] < self.func.lb[i]:
+                self.func.ub[i], self.func.lb[i] = self.func.lb[i], self.func.ub[i]
+        # Start
         self.time_start = process_time()
         self.initialize()
         self.report()

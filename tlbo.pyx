@@ -52,7 +52,7 @@ cdef class TeachingLearning(AlgorithmBase):
         cdef uint i, j
         for i in range(self.class_size):
             for j in range(self.dim):
-                s[i, j] = rand_v(self.func.lower[j], self.func.upper[j])
+                s[i, j] = rand_v(self.func.lb[j], self.func.ub[j])
             s[i, -1] = self.func.fitness(s[i, :-1])
         s = s[s[:, -1].argsort()][::-1]
         for i in range(self.class_size):
@@ -76,10 +76,10 @@ cdef class TeachingLearning(AlgorithmBase):
                 mean += self.students[j].v[i]
             mean /= self.dim
             v[i] = student.v[i] + rand_v(1, self.dim) * (self.last_best.v[i] - tf * mean)
-            if v[i] < self.func.lower[i]:
-                v[i] = self.func.lower[i]
-            elif v[i] > self.func.upper[i]:
-                v[i] = self.func.upper[i]
+            if v[i] < self.func.lb[i]:
+                v[i] = self.func.lb[i]
+            elif v[i] > self.func.ub[i]:
+                v[i] = self.func.ub[i]
         cdef double f_new = self.func.fitness(v)
         if f_new < student.f:
             student.v[:] = v
@@ -105,10 +105,10 @@ cdef class TeachingLearning(AlgorithmBase):
             else:
                 diff = student_b.v[i] - student_a.v[i]
             v[i] = student_a.v[i] + diff * rand_v(1, self.dim)
-            if v[i] < self.func.lower[i]:
-                v[i] = self.func.lower[i]
-            elif v[i] > self.func.upper[i]:
-                v[i] = self.func.upper[i]
+            if v[i] < self.func.lb[i]:
+                v[i] = self.func.lb[i]
+            elif v[i] > self.func.ub[i]:
+                v[i] = self.func.ub[i]
         cdef double f_new = self.func.fitness(v)
         if f_new < student_a.f:
             student_a.v[:] = v

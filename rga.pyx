@@ -58,8 +58,8 @@ cdef class Genetic(AlgorithmBase):
 
     cdef inline double check(self, int i, double v):
         """If a variable is out of bound, replace it with a random value."""
-        if not self.func.upper[i] >= v >= self.func.lower[i]:
-            return rand_v(self.func.lower[i], self.func.upper[i])
+        if not self.func.ub[i] >= v >= self.func.lb[i]:
+            return rand_v(self.func.lb[i], self.func.ub[i])
         return v
 
     cdef inline void initialize(self):
@@ -68,7 +68,7 @@ cdef class Genetic(AlgorithmBase):
         for i in range(self.pop_num):
             tmp = self.chromosome[i]
             for j in range(self.dim):
-                tmp.v[j] = rand_v(self.func.lower[j], self.func.upper[j])
+                tmp.v[j] = rand_v(self.func.lb[j], self.func.ub[j])
         tmp = self.chromosome[0]
         tmp.f = self.func.fitness(tmp.v)
         self.last_best.assign(tmp)
@@ -142,9 +142,9 @@ cdef class Genetic(AlgorithmBase):
             s = rand_i(self.dim)
             tmp = self.chromosome[i]
             if rand_v() < 0.5:
-                tmp.v[s] += self.get_delta(self.func.upper[s] - tmp.v[s])
+                tmp.v[s] += self.get_delta(self.func.ub[s] - tmp.v[s])
             else:
-                tmp.v[s] -= self.get_delta(tmp.v[s] - self.func.lower[s])
+                tmp.v[s] -= self.get_delta(tmp.v[s] - self.func.lb[s])
 
     cdef inline void select(self):
         """roulette wheel selection"""

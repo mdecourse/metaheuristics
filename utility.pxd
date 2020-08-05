@@ -33,8 +33,8 @@ cdef class Chromosome:
 
 cdef class ObjFunc:
     cdef uint gen
-    cdef double[:] upper
-    cdef double[:] lower
+    cdef double[:] ub
+    cdef double[:] lb
 
     cdef double fitness(self, double[:] v)
     cpdef object result(self, double[:] v)

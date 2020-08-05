@@ -88,7 +88,7 @@ cdef class Differential(AlgorithmBase):
         for i in range(self.np):
             tmp = self.pool[i]
             for j in range(self.dim):
-                tmp.v[j] = rand_v(self.func.lower[j], self.func.upper[j])
+                tmp.v[j] = rand_v(self.func.lb[j], self.func.ub[j])
             tmp.f = self.func.fitness(tmp.v)
         self.last_best.assign(self.find_best())
 
@@ -200,7 +200,7 @@ cdef class Differential(AlgorithmBase):
         """check the member's chromosome that is out of bound?"""
         cdef uint i
         for i in range(self.dim):
-            if not self.func.upper[i] >= member.v[i] >= self.func.lower[i]:
+            if not self.func.ub[i] >= member.v[i] >= self.func.lb[i]:
                 return True
         return False
 
