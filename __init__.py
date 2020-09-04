@@ -9,7 +9,7 @@ __email__ = "pyslvs@gmail.com"
 
 from typing import Mapping, Union, Type
 from enum import unique, Enum
-from .utility import ObjFunc, AlgorithmBase
+from .utility import ObjFunc, Algorithm
 from .rga import Genetic
 from .firefly import Firefly
 from .de import Differential
@@ -25,7 +25,7 @@ class AlgorithmType(str, Enum):
     TLBO = "Teaching Learning Based Optimization"
 
 
-ALGORITHM: Mapping[AlgorithmType, Type[AlgorithmBase]] = {
+ALGORITHM: Mapping[AlgorithmType, Type[Algorithm]] = {
     AlgorithmType.RGA: Genetic,
     AlgorithmType.Firefly: Firefly,
     AlgorithmType.DE: Differential,

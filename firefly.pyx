@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# cython: language_level=3, cdivision=True
+# cython: language_level=3, cdivision=True, boundscheck=False, wraparound=False
 
 """Firefly Algorithm
 
@@ -15,7 +15,7 @@ from .utility cimport (
     rand_v,
     Chromosome,
     ObjFunc,
-    AlgorithmBase,
+    Algorithm,
 )
 
 ctypedef unsigned int uint
@@ -33,11 +33,9 @@ cdef double _distance(Chromosome me, Chromosome she, uint dim):
 
 
 @cython.final
-cdef class Firefly(AlgorithmBase):
+cdef class Firefly(Algorithm):
     """The implementation of Firefly Algorithm."""
-    cdef uint n
     cdef double alpha, alpha0, beta_min, beta0, gamma
-    cdef Chromosome[:] fireflies
 
     def __cinit__(
         self,
@@ -58,7 +56,7 @@ cdef class Firefly(AlgorithmBase):
         }
         """
         # n, the population size of fireflies
-        self.n = settings.get('n', 80)
+        self.pop_num = settings.get('n', 80)
         # alpha, the step size
         self.alpha = settings.get('alpha', 0.01)
         # alpha0, use to calculate_new_alpha
@@ -70,27 +68,27 @@ cdef class Firefly(AlgorithmBase):
         # gamma
         self.gamma = settings.get('gamma', 1.)
         # all fireflies, depended on population n
-        self.fireflies = Chromosome.new_pop(self.dim, self.n)
+        self.pool = Chromosome.new_pop(self.dim, self.pop_num)
 
     cdef inline void initialize(self):
         cdef uint i, j
         cdef Chromosome tmp
-        for i in range(self.n):
+        for i in range(self.pop_num):
             # initialize the Chromosome
-            tmp = self.fireflies[i]
+            tmp = self.pool[i]
             for j in range(self.dim):
                 tmp.v[j] = rand_v(self.func.lb[j], self.func.ub[j])
         self.evaluate()
-        self.last_best.assign(self.fireflies[0])
+        self.last_best.assign(self.pool[0])
 
     cdef inline void move_fireflies(self):
         cdef uint i
         cdef bint is_move
         cdef double scale, tmp_v
         cdef Chromosome tmp, other
-        for tmp in self.fireflies:
+        for tmp in self.pool:
             is_move = False
-            for other in self.fireflies:
+            for other in self.pool:
                 if tmp is other:
                     continue
                 is_move |= self.move_firefly(tmp, other)
@@ -103,7 +101,7 @@ cdef class Firefly(AlgorithmBase):
 
     cdef inline void evaluate(self):
         cdef Chromosome firefly
-        for firefly in self.fireflies:
+        for firefly in self.pool:
             firefly.f = self.func.fitness(firefly.v)
 
     cdef inline bint move_firefly(self, Chromosome me, Chromosome she):
@@ -130,15 +128,13 @@ cdef class Firefly(AlgorithmBase):
     cdef inline Chromosome find_firefly(self):
         cdef int index = 0
         cdef double f = HUGE_VAL
-
         cdef int i
         cdef Chromosome tmp
-        for i, tmp in enumerate(self.fireflies):
-            tmp = self.fireflies[i]
+        for i, tmp in enumerate(self.pool):
             if tmp.f < f:
                 index = i
                 f = tmp.f
-        return self.fireflies[index]
+        return self.pool[index]
 
     cdef inline void generation_process(self):
         self.move_fireflies()

@@ -63,7 +63,7 @@ cdef class ObjFunc:
         raise NotImplementedError
 
 
-cdef class AlgorithmBase:
+cdef class Algorithm:
     """Algorithm base class.
 
     It is used to build the Meta-heuristic Algorithms.

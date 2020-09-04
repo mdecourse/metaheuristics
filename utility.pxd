@@ -40,14 +40,15 @@ cdef class ObjFunc:
     cpdef object result(self, double[:] v)
 
 
-cdef class AlgorithmBase:
+cdef class Algorithm:
     cdef public ObjFunc func
-    cdef uint dim, stop_at_i, rpt
+    cdef uint pop_num, dim, stop_at_i, rpt
     cdef double stop_at_f, time_start
     cdef Task stop_at
     cdef Chromosome last_best
     cdef list fitness_time
     cdef object progress_fun, interrupt_fun
+    cdef Chromosome[:] pool
 
     cdef void initialize(self)
     cdef void generation_process(self)

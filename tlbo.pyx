@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# cython: language_level=3, cdivision=True
+# cython: language_level=3, cdivision=True, boundscheck=False, wraparound=False
 
 """Teaching Learning Based Optimization
 
@@ -17,17 +17,15 @@ from .utility cimport (
     rand_i,
     Chromosome,
     ObjFunc,
-    AlgorithmBase,
+    Algorithm,
 )
 
 ctypedef unsigned int uint
 
 
 @cython.final
-cdef class TeachingLearning(AlgorithmBase):
+cdef class TeachingLearning(Algorithm):
     """The implementation of Teaching Learning Based Optimization."""
-    cdef uint class_size
-    cdef Chromosome[:] students
 
     def __cinit__(
         self,
@@ -43,26 +41,27 @@ cdef class TeachingLearning(AlgorithmBase):
             'report': int,
         }
         """
-        self.class_size = settings.get('class_size', 50)
-        self.students = Chromosome.new_pop(self.dim, self.class_size)
+        self.pop_num = settings.get('class_size', 50)
+        self.pool = Chromosome.new_pop(self.dim, self.pop_num)
 
     cdef inline void initialize(self):
         """Initial population: Sorted students."""
-        cdef ndarray[double, ndim=2] s = zeros((self.class_size, self.dim + 1), dtype=np_float)
+        cdef uint end = self.dim + 1
+        cdef ndarray[double, ndim=2] s = zeros((self.pop_num, end), dtype=np_float)
         cdef uint i, j
-        for i in range(self.class_size):
+        for i in range(self.pop_num):
             for j in range(self.dim):
                 s[i, j] = rand_v(self.func.lb[j], self.func.ub[j])
-            s[i, -1] = self.func.fitness(s[i, :-1])
-        s = s[s[:, -1].argsort()][::-1]
-        for i in range(self.class_size):
-            self.students[i].v = s[i, :-1]
-            self.students[i].f = s[i, -1]
-        self.last_best.assign(self.students[-1])
+            s[i, end - 1] = self.func.fitness(s[i, :end - 1])
+        s = s[s[:, end - 1].argsort()][::-1]
+        for i in range(self.pop_num):
+            self.pool[i].v = s[i, :end - 1]
+            self.pool[i].f = s[i, end - 1]
+        self.last_best.assign(self.pool[self.pop_num - 1])
 
     cdef inline void teaching(self, uint index):
         """Teaching phase. The last best is the teacher."""
-        cdef Chromosome student = self.students[index]
+        cdef Chromosome student = self.pool[index]
         cdef double[:] v = zeros(self.dim, dtype=np_float)
         cdef double tf = round(1 + rand_v())
         cdef uint i, j
@@ -72,8 +71,8 @@ cdef class TeachingLearning(AlgorithmBase):
             if self.state_check():
                 return
             mean = 0
-            for j in range(self.class_size):
-                mean += self.students[j].v[i]
+            for j in range(self.pop_num):
+                mean += self.pool[j].v[i]
             mean /= self.dim
             v[i] = student.v[i] + rand_v(1, self.dim) * (self.last_best.v[i] - tf * mean)
             if v[i] < self.func.lb[i]:
@@ -89,11 +88,11 @@ cdef class TeachingLearning(AlgorithmBase):
 
     cdef inline void learning(self, uint index):
         """Learning phase."""
-        cdef Chromosome student_a = self.students[index]
-        cdef uint cmp_index = rand_i(self.class_size - 1)
+        cdef Chromosome student_a = self.pool[index]
+        cdef uint cmp_index = rand_i(self.pop_num - 1)
         if cmp_index >= index:
             cmp_index += 1
-        cdef Chromosome student_b = self.students[cmp_index]
+        cdef Chromosome student_b = self.pool[cmp_index]
         cdef double[:] v = zeros(self.dim, dtype=np_float)
         cdef uint i
         cdef double diff
@@ -127,7 +126,7 @@ cdef class TeachingLearning(AlgorithmBase):
     cdef inline void generation_process(self):
         """The process of each generation."""
         cdef uint i
-        for i in range(self.class_size):
+        for i in range(self.pop_num):
             if self.state_check():
                 break
             self.teaching(i)

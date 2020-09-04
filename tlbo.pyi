@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 from typing import Dict, Callable, Optional, Any
-from .utility import AlgorithmBase, ObjFunc, FVal
+from .utility import Algorithm, ObjFunc, FVal
 
-class TeachingLearning(AlgorithmBase):
+class TeachingLearning(Algorithm):
 
     def __init__(
         self,

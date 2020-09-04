@@ -21,7 +21,7 @@ class ObjFunc(Generic[FVal]):
         ...
 
 
-class AlgorithmBase(Generic[FVal]):
+class Algorithm(Generic[FVal]):
 
     func: ObjFunc[FVal]
 

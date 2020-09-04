@@ -15,7 +15,7 @@ from .utility cimport (
     rand_i,
     Chromosome,
     ObjFunc,
-    AlgorithmBase,
+    Algorithm,
 )
 
 ctypedef unsigned int uint
@@ -36,12 +36,11 @@ cdef enum Strategy:
 
 
 @cython.final
-cdef class Differential(AlgorithmBase):
+cdef class Differential(Algorithm):
     """The implementation of Differential Evolution."""
     cdef Strategy strategy
-    cdef uint np, r1, r2, r3, r4, r5
+    cdef uint r1, r2, r3, r4, r5
     cdef double F, CR
-    cdef Chromosome[:] pool
 
     def __cinit__(
         self,
@@ -67,7 +66,7 @@ cdef class Differential(AlgorithmBase):
         self.strategy = <Strategy>strategy
         # population size
         # To start off np = 10*dim is a reasonable choice. Increase np if misconvergence
-        self.np = settings.get('NP', 400)
+        self.pop_num = settings.get('NP', 400)
         # weight factor F is usually between 0.5 and 1 (in rare cases > 1)
         self.F = settings.get('F', 0.6)
         if not (0.5 <= self.F <= 1):
@@ -79,13 +78,13 @@ cdef class Differential(AlgorithmBase):
         # the vector
         self.r1 = self.r2 = self.r3 = self.r4 = self.r5 = 0
         # generation pool, depended on population size
-        self.pool = Chromosome.new_pop(self.dim, self.np)
+        self.pool = Chromosome.new_pop(self.dim, self.pop_num)
 
     cdef inline void initialize(self):
         """Initial population."""
         cdef uint i, j
         cdef Chromosome tmp
-        for i in range(self.np):
+        for i in range(self.pop_num):
             tmp = self.pool[i]
             for j in range(self.dim):
                 tmp.v[j] = rand_v(self.func.lb[j], self.func.ub[j])
@@ -105,21 +104,21 @@ cdef class Differential(AlgorithmBase):
         """Generate new vector."""
         self.r1 = self.r2 = self.r3 = self.r4 = self.r5 = i
         while self.r1 == i:
-            self.r1 = rand_i(self.np)
+            self.r1 = rand_i(self.pop_num)
         while self.r2 in {i, self.r1}:
-            self.r2 = rand_i(self.np)
+            self.r2 = rand_i(self.pop_num)
         if self.strategy in {STRATEGY1, STRATEGY3, STRATEGY6, STRATEGY8}:
             return
         while self.r3 in {i, self.r1, self.r2}:
-            self.r3 = rand_i(self.np)
+            self.r3 = rand_i(self.pop_num)
         if self.strategy in {STRATEGY2, STRATEGY7}:
             return
         while self.r4 in {i, self.r1, self.r2, self.r3}:
-            self.r4 = rand_i(self.np)
+            self.r4 = rand_i(self.pop_num)
         if self.strategy in {STRATEGY4, STRATEGY9}:
             return
         while self.r5 in {i, self.r1, self.r2, self.r3, self.r4}:
-            self.r5 = rand_i(self.np)
+            self.r5 = rand_i(self.pop_num)
 
     cdef inline void type1(self, Chromosome tmp, Eq func):
         cdef uint n = rand_i(self.dim)
@@ -207,7 +206,7 @@ cdef class Differential(AlgorithmBase):
     cdef inline void generation_process(self):
         cdef uint i
         cdef Chromosome tmp, baby
-        for i in range(self.np):
+        for i in range(self.pop_num):
             # generate new vector
             self.generate_random_vector(i)
             # use the vector recombine the member to temporary

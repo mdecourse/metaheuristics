@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 from typing import Dict, Callable, Optional, Any
-from .utility import AlgorithmBase, ObjFunc, FVal
+from .utility import Algorithm, ObjFunc, FVal
 
-class Firefly(AlgorithmBase):
+class Firefly(Algorithm):
 
     def __init__(
         self,

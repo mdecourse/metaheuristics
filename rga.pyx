@@ -17,18 +17,17 @@ from .utility cimport (
     rand_i,
     Chromosome,
     ObjFunc,
-    AlgorithmBase,
+    Algorithm,
 )
 
 ctypedef unsigned int uint
 
 
 @cython.final
-cdef class Genetic(AlgorithmBase):
+cdef class Genetic(Algorithm):
     """The implementation of Real-coded Genetic Algorithm."""
-    cdef uint pop_num
     cdef double cross, mute, win, delta
-    cdef Chromosome[:] chromosome, new_chromosome
+    cdef Chromosome[:] new_pool
 
     def __cinit__(
         self,
@@ -53,8 +52,8 @@ cdef class Genetic(AlgorithmBase):
         self.mute = settings.get('mute', 0.05)
         self.win = settings.get('win', 0.95)
         self.delta = settings.get('delta', 5.)
-        self.chromosome = Chromosome.new_pop(self.dim, self.pop_num)
-        self.new_chromosome = Chromosome.new_pop(self.dim, self.pop_num)
+        self.pool = Chromosome.new_pop(self.dim, self.pop_num)
+        self.new_pool = Chromosome.new_pop(self.dim, self.pop_num)
 
     cdef inline double check(self, int i, double v):
         """If a variable is out of bound, replace it with a random value."""
@@ -66,10 +65,10 @@ cdef class Genetic(AlgorithmBase):
         cdef uint i, j
         cdef Chromosome tmp
         for i in range(self.pop_num):
-            tmp = self.chromosome[i]
+            tmp = self.pool[i]
             for j in range(self.dim):
                 tmp.v[j] = rand_v(self.func.lb[j], self.func.ub[j])
-        tmp = self.chromosome[0]
+        tmp = self.pool[0]
         tmp.f = self.func.fitness(tmp.v)
         self.last_best.assign(tmp)
         self.fitness()
@@ -84,8 +83,8 @@ cdef class Genetic(AlgorithmBase):
             if not rand_v() < self.cross:
                 continue
 
-            b1 = self.chromosome[i]
-            b2 = self.chromosome[i + 1]
+            b1 = self.pool[i]
+            b2 = self.pool[i + 1]
             for s in range(self.dim):
                 # first baby, half father half mother
                 c1.v[s] = 0.5 * b1.v[s] + 0.5 * b2.v[s]
@@ -120,18 +119,18 @@ cdef class Genetic(AlgorithmBase):
         cdef uint i
         cdef Chromosome tmp
         for i in range(self.pop_num):
-            tmp = self.chromosome[i]
+            tmp = self.pool[i]
             tmp.f = self.func.fitness(tmp.v)
 
         cdef int index = 0
         cdef double f = HUGE_VAL
 
-        for i, tmp in enumerate(self.chromosome):
+        for i, tmp in enumerate(self.pool):
             if tmp.f < f:
                 index = i
                 f = tmp.f
         if f < self.last_best.f:
-            self.last_best.assign(self.chromosome[index])
+            self.last_best.assign(self.pool[index])
 
     cdef inline void mutate(self):
         cdef uint i, s
@@ -140,7 +139,7 @@ cdef class Genetic(AlgorithmBase):
             if not rand_v() < self.mute:
                 continue
             s = rand_i(self.dim)
-            tmp = self.chromosome[i]
+            tmp = self.pool[i]
             if rand_v() < 0.5:
                 tmp.v[s] += self.get_delta(self.func.ub[s] - tmp.v[s])
             else:
@@ -153,9 +152,9 @@ cdef class Genetic(AlgorithmBase):
         for i in range(self.pop_num):
             j = rand_i(self.pop_num)
             k = rand_i(self.pop_num)
-            b1 = self.chromosome[j]
-            b2 = self.chromosome[k]
-            baby = self.new_chromosome[i]
+            b1 = self.pool[j]
+            b2 = self.pool[k]
+            baby = self.new_pool[i]
             if b1.f > b2.f and rand_v() < self.win:
                 baby.assign(b2)
             else:
@@ -163,10 +162,10 @@ cdef class Genetic(AlgorithmBase):
         # in this stage, new_chromosome is select finish
         # now replace origin chromosome
         for i in range(self.pop_num):
-            baby = self.chromosome[i]
-            baby.assign(self.new_chromosome[i])
+            baby = self.pool[i]
+            baby.assign(self.new_pool[i])
         # select random one chromosome to be best chromosome, make best chromosome still exist
-        baby = self.chromosome[rand_i(self.pop_num)]
+        baby = self.pool[rand_i(self.pop_num)]
         baby.assign(self.last_best)
 
     cdef inline void generation_process(self):
