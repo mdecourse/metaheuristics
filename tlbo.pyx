@@ -12,6 +12,7 @@ email: pyslvs@gmail.com
 cimport cython
 from numpy cimport ndarray
 from numpy import zeros, float64 as np_float
+from libc.math cimport round
 from .utility cimport (
     rand_v,
     rand_i,
@@ -66,7 +67,6 @@ cdef class TeachingLearning(Algorithm):
         cdef double tf = round(1 + rand_v())
         cdef uint i, j
         cdef double mean
-        cdef Chromosome tmp
         for i in range(self.dim):
             if self.state_check():
                 return
@@ -115,12 +115,15 @@ cdef class TeachingLearning(Algorithm):
         if student_a.f < self.last_best.f:
             self.last_best.assign(student_a)
 
-    cdef inline bint state_check(self):
+    cdef inline bint state_check(self) nogil:
         """Check status."""
         if self.progress_fun is not None:
-            self.progress_fun(self.func.gen, f"{self.last_best.f:.04f}")
-        if (self.interrupt_fun is not None) and self.interrupt_fun():
-            return True
+            with gil:
+                self.progress_fun(self.func.gen, f"{self.last_best.f:.04f}")
+        if self.interrupt_fun is not None:
+            with gil:
+                if self.interrupt_fun():
+                    return True
         return False
 
     cdef inline void generation_process(self):

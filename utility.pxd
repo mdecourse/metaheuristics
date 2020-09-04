@@ -10,6 +10,9 @@ license: AGPL
 email: pyslvs@gmail.com
 """
 
+from libc.time cimport time_t
+from libcpp.list cimport list as clist
+
 ctypedef unsigned int uint
 
 cdef enum Task:
@@ -17,6 +20,11 @@ cdef enum Task:
     MIN_FIT
     MAX_TIME
     SLOW_DOWN
+
+cdef packed struct Report:
+    uint gen
+    double fitness
+    double time
 
 cdef double rand_v(double lower = *, double upper = *) nogil
 cdef uint rand_i(int upper) nogil
@@ -26,7 +34,7 @@ cdef class Chromosome:
     cdef double f
     cdef double[:] v
 
-    cdef void assign(self, Chromosome obj)
+    cdef void assign(self, Chromosome rhs) nogil
     @staticmethod
     cdef Chromosome[:] new_pop(uint d, uint n)
 
@@ -43,15 +51,16 @@ cdef class ObjFunc:
 cdef class Algorithm:
     cdef public ObjFunc func
     cdef uint pop_num, dim, stop_at_i, rpt
-    cdef double stop_at_f, time_start
+    cdef double stop_at_f
+    cdef time_t time_start
     cdef Task stop_at
+    cdef clist[Report] fitness_time
     cdef Chromosome last_best
-    cdef list fitness_time
-    cdef object progress_fun, interrupt_fun
     cdef Chromosome[:] pool
+    cdef object progress_fun, interrupt_fun
 
     cdef void initialize(self)
     cdef void generation_process(self)
-    cdef void report(self)
+    cdef void report(self) nogil
     cpdef list history(self)
     cpdef object run(self)

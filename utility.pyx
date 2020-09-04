@@ -10,11 +10,10 @@ license: AGPL
 email: pyslvs@gmail.com
 """
 
-from time import process_time
 from numpy import zeros, array, float64 as np_float
 cimport cython
 from libc.stdlib cimport rand, srand, RAND_MAX
-from libc.time cimport time
+from libc.time cimport time, difftime
 
 
 cdef inline double rand_v(double lower = 0., double upper = 1.) nogil:
@@ -36,12 +35,12 @@ cdef class Chromosome:
         self.f = 0.
         self.v = zeros(n, dtype=np_float)
 
-    cdef void assign(self, Chromosome other):
+    cdef void assign(self, Chromosome rhs) nogil:
         """Assign from an old generation."""
-        if other is self:
+        if rhs is self:
             return
-        self.f = other.f
-        self.v[:] = other.v
+        self.f = rhs.f
+        self.v[:] = rhs.v
 
     @staticmethod
     cdef Chromosome[:] new_pop(uint d, uint n):
@@ -118,12 +117,12 @@ cdef class Algorithm:
         """The process of each generation."""
         raise NotImplementedError
 
-    cdef inline void report(self):
+    cdef inline void report(self) nogil:
         """Report generation, fitness and time."""
-        self.fitness_time.append((
+        self.fitness_time.push_back(Report(
             self.func.gen,
             self.last_best.f,
-            process_time() - self.time_start,
+            difftime(time(NULL), self.time_start),
         ))
 
     cpdef list history(self):
@@ -133,7 +132,11 @@ cdef class Algorithm:
         the second value is fitness;
         the third value is time in second.
         """
-        return self.fitness_time
+        ret = []
+        cdef Report report
+        for report in self.fitness_time:
+            ret.append((report.gen, report.fitness, report.time))
+        return ret
 
     cpdef object run(self):
         """Run and return the result and convergence history.
@@ -151,10 +154,10 @@ cdef class Algorithm:
             if self.func.ub[i] < self.func.lb[i]:
                 self.func.ub[i], self.func.lb[i] = self.func.lb[i], self.func.ub[i]
         # Start
-        self.time_start = process_time()
+        self.time_start = time(NULL)
         self.initialize()
         self.report()
-
+        # Iterations
         cdef double diff, last_best
         cdef double last_diff = 0
         while True:
@@ -170,7 +173,7 @@ cdef class Algorithm:
                 if self.last_best.f <= self.stop_at_f:
                     break
             elif self.stop_at == MAX_TIME:
-                if process_time() - self.time_start >= self.stop_at_f > 0:
+                if difftime(time(NULL), self.time_start) >= self.stop_at_f > 0:
                     break
             elif self.stop_at == SLOW_DOWN:
                 diff = last_best - self.last_best.f
