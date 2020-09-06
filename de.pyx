@@ -10,16 +10,10 @@ email: pyslvs@gmail.com
 """
 
 cimport cython
-from .utility cimport (
-    rand_v,
-    rand_i,
-    Chromosome,
-    ObjFunc,
-    Algorithm,
-)
+from .utility cimport rand_v, rand_i, ObjFunc, Algorithm
 
 ctypedef unsigned int uint
-ctypedef void (*Eq)(Differential, int, Chromosome)
+ctypedef void (*Eq)(Differential, uint, double[:]) nogil
 
 
 cdef enum Strategy:
@@ -65,7 +59,8 @@ cdef class Differential(Algorithm):
             raise ValueError(f"invalid strategy: {strategy}")
         self.strategy = <Strategy>strategy
         # population size
-        # To start off np = 10*dim is a reasonable choice. Increase np if misconvergence
+        # To start off np = 10*dim is a reasonable choice. Increase np if
+        # misconvergence
         self.pop_num = settings.get('NP', 400)
         # weight factor F is usually between 0.5 and 1 (in rare cases > 1)
         self.F = settings.get('F', 0.6)
@@ -77,30 +72,24 @@ cdef class Differential(Algorithm):
             raise ValueError('CR should be [0,1]')
         # the vector
         self.r1 = self.r2 = self.r3 = self.r4 = self.r5 = 0
-        # generation pool, depended on population size
-        self.pool = Chromosome.new_pop(self.dim, self.pop_num)
+        # generation pool
+        self.new_pop()
 
     cdef inline void initialize(self):
         """Initial population."""
         cdef uint i, j
-        cdef Chromosome tmp
         for i in range(self.pop_num):
-            tmp = self.pool[i]
             for j in range(self.dim):
-                tmp.v[j] = rand_v(self.func.lb[j], self.func.ub[j])
-            tmp.f = self.func.fitness(tmp.v)
-        self.last_best.assign(self.find_best())
+                self.pool[i, j] = rand_v(self.func.lb[j], self.func.ub[j])
+            self.fitness[i] = self.func.fitness(self.pool[i, :])
+        # Find best
+        cdef uint best = 0
+        for i in range(1, self.pop_num):
+            if self.fitness[i] < self.fitness[best]:
+                best = i
+        self.set_best(best)
 
-    cdef inline Chromosome find_best(self):
-        """Find member that have minimum fitness value from pool."""
-        cdef Chromosome best = self.pool[0]
-        cdef Chromosome tmp
-        for tmp in self.pool[1:]:
-            if tmp.f < best.f:
-                best = tmp
-        return best
-
-    cdef inline void generate_random_vector(self, uint i):
+    cdef inline void generate_random_vector(self, uint i) nogil:
         """Generate new vector."""
         self.r1 = self.r2 = self.r3 = self.r4 = self.r5 = i
         while self.r1 == i:
@@ -120,17 +109,17 @@ cdef class Differential(Algorithm):
         while self.r5 in {i, self.r1, self.r2, self.r3, self.r4}:
             self.r5 = rand_i(self.pop_num)
 
-    cdef inline void type1(self, Chromosome tmp, Eq func):
+    cdef void type1(self, double[:] tmp, Eq func) nogil:
         cdef uint n = rand_i(self.dim)
         cdef uint l_v = 0
         while True:
             func(self, n, tmp)
             n = (n + 1) % self.dim
             l_v += 1
-            if not (rand_v() < self.CR and l_v < self.dim):
+            if rand_v() >= self.CR or l_v >= self.dim:
                 break
 
-    cdef inline void type2(self, Chromosome tmp, Eq func):
+    cdef void type2(self, double[:] tmp, Eq func) nogil:
         cdef uint n = rand_i(self.dim)
         cdef uint l_v
         for l_v in range(self.dim):
@@ -138,41 +127,32 @@ cdef class Differential(Algorithm):
                 func(self, n, tmp)
             n = (n + 1) % self.dim
 
-    cdef void eq1(self, int n, Chromosome tmp):
-        cdef Chromosome c1 = self.pool[self.r1]
-        cdef Chromosome c2 = self.pool[self.r2]
-        tmp.v[n] = self.last_best.v[n] + self.F * (c1.v[n] - c2.v[n])
+    cdef void eq1(self, uint n, double[:] tmp) nogil:
+        tmp[n] = self.best[n] + self.F * (
+            self.pool[self.r1, n] - self.pool[self.r2, n])
 
-    cdef void eq2(self, int n, Chromosome tmp):
-        cdef Chromosome c1 = self.pool[self.r1]
-        cdef Chromosome c2 = self.pool[self.r2]
-        cdef Chromosome c3 = self.pool[self.r3]
-        tmp.v[n] = c1.v[n] + self.F * (c2.v[n] - c3.v[n])
+    cdef void eq2(self, uint n, double[:] tmp) nogil:
+        tmp[n] = self.pool[self.r1, n] + self.F * (
+            self.pool[self.r2, n] - self.pool[self.r3, n])
 
-    cdef void eq3(self, int n, Chromosome tmp):
-        cdef Chromosome c1 = self.pool[self.r1]
-        cdef Chromosome c2 = self.pool[self.r2]
-        tmp.v[n] = tmp.v[n] + self.F * (self.last_best.v[n] - tmp.v[n]) + self.F * (c1.v[n] - c2.v[n])
+    cdef void eq3(self, uint n, double[:] tmp) nogil:
+        tmp[n] = tmp[n] + self.F * (self.best[n] - tmp[n]) + self.F * (
+                self.pool[self.r1, n] - self.pool[self.r2, n])
 
-    cdef void eq4(self, int n, Chromosome tmp):
-        cdef Chromosome c1 = self.pool[self.r1]
-        cdef Chromosome c2 = self.pool[self.r2]
-        cdef Chromosome c3 = self.pool[self.r3]
-        cdef Chromosome c4 = self.pool[self.r4]
-        tmp.v[n] = self.last_best.v[n] + (c1.v[n] + c2.v[n] - c3.v[n] - c4.v[n]) * self.F
+    cdef void eq4(self, uint n, double[:] tmp) nogil:
+        tmp[n] = self.best[n] + self.F * (
+            self.pool[self.r1, n] + self.pool[self.r2, n]
+            - self.pool[self.r3, n] - self.pool[self.r4, n])
 
-    cdef void eq5(self, int n, Chromosome tmp):
-        cdef Chromosome c1 = self.pool[self.r1]
-        cdef Chromosome c2 = self.pool[self.r2]
-        cdef Chromosome c3 = self.pool[self.r3]
-        cdef Chromosome c4 = self.pool[self.r4]
-        cdef Chromosome c5 = self.pool[self.r5]
-        tmp.v[n] = c5.v[n] + (c1.v[n] + c2.v[n] - c3.v[n] - c4.v[n]) * self.F
+    cdef void eq5(self, uint n, double[:] tmp) nogil:
+        tmp[n] = self.pool[self.r5, n] + self.F * (
+            self.pool[self.r1, n] + self.pool[self.r2, n]
+            - self.pool[self.r3, n] - self.pool[self.r4, n])
 
-    cdef inline Chromosome recombination(self, int i):
+    cdef inline double[:] recombination(self, int i):
         """use new vector, recombination the new one member to tmp."""
-        cdef Chromosome tmp = Chromosome.__new__(Chromosome, self.dim)
-        tmp.assign(self.pool[i])
+        cdef double[:] tmp = self.make_tmp()
+        tmp[:] = self.pool[i, :]
         if self.strategy == 1:
             self.type1(tmp, Differential.eq1)
         elif self.strategy == 2:
@@ -195,17 +175,18 @@ cdef class Differential(Algorithm):
             self.type2(tmp, Differential.eq5)
         return tmp
 
-    cdef inline bint over_bound(self, Chromosome member):
+    cdef inline bint over_bound(self, double[:] member):
         """check the member's chromosome that is out of bound?"""
         cdef uint i
         for i in range(self.dim):
-            if not self.func.ub[i] >= member.v[i] >= self.func.lb[i]:
+            if not self.func.ub[i] >= member[i] >= self.func.lb[i]:
                 return True
         return False
 
     cdef inline void generation_process(self):
         cdef uint i
-        cdef Chromosome tmp, baby
+        cdef double tmp_f
+        cdef double[:] tmp
         for i in range(self.pop_num):
             # generate new vector
             self.generate_random_vector(i)
@@ -217,13 +198,12 @@ cdef class Differential(Algorithm):
                 continue
             # is not out of bound, that mean it's qualify of environment
             # then evaluate the one
-            tmp.f = self.func.fitness(tmp.v)
+            tmp_f = self.func.fitness(tmp)
             # if temporary one is better than origin(fitness value is smaller)
-            baby = self.pool[i]
-            if tmp.f <= baby.f:
+            if tmp_f <= self.fitness[i]:
                 # copy the temporary one to origin member
-                baby.assign(tmp)
+                self.assign_from(i, tmp_f, tmp)
                 # check the temporary one is better than the current_best
-                if tmp.f < self.last_best.f:
+                if tmp_f < self.best_f:
                     # copy the temporary one to current_best
-                    self.last_best.assign(tmp)
+                    self.set_best_from(tmp_f, tmp)

@@ -10,15 +10,9 @@ email: pyslvs@gmail.com
 """
 
 cimport cython
-from libc.math cimport pow, HUGE_VAL
-from .utility cimport (
-    MAX_GEN,
-    rand_v,
-    rand_i,
-    Chromosome,
-    ObjFunc,
-    Algorithm,
-)
+from libc.math cimport pow
+from numpy import zeros, float64 as np_float
+from .utility cimport MAX_GEN, rand_v, rand_i, ObjFunc, Algorithm
 
 ctypedef unsigned int uint
 
@@ -27,7 +21,8 @@ ctypedef unsigned int uint
 cdef class Genetic(Algorithm):
     """The implementation of Real-coded Genetic Algorithm."""
     cdef double cross, mute, win, delta
-    cdef Chromosome[:] new_pool
+    cdef double[:] new_fitness
+    cdef double[:, :] new_pool
 
     def __cinit__(
         self,
@@ -52,10 +47,16 @@ cdef class Genetic(Algorithm):
         self.mute = settings.get('mute', 0.05)
         self.win = settings.get('win', 0.95)
         self.delta = settings.get('delta', 5.)
-        self.pool = Chromosome.new_pop(self.dim, self.pop_num)
-        self.new_pool = Chromosome.new_pop(self.dim, self.pop_num)
+        self.new_pop()
+        self.new_fitness = zeros(self.pop_num, dtype=np_float)
+        self.new_pool = zeros((self.pop_num, self.dim), dtype=np_float)
 
-    cdef inline double check(self, int i, double v):
+    cdef inline void backup(self, uint i, uint j) nogil:
+        """Backup individual."""
+        self.new_fitness[i] = self.fitness[j]
+        self.new_pool[i, :] = self.pool[j, :]
+
+    cdef inline double check(self, int i, double v) nogil:
         """If a variable is out of bound, replace it with a random value."""
         if not self.func.ub[i] >= v >= self.func.lb[i]:
             return rand_v(self.func.lb[i], self.func.ub[i])
@@ -63,51 +64,50 @@ cdef class Genetic(Algorithm):
 
     cdef inline void initialize(self):
         cdef uint i, j
-        cdef Chromosome tmp
         for i in range(self.pop_num):
-            tmp = self.pool[i]
             for j in range(self.dim):
-                tmp.v[j] = rand_v(self.func.lb[j], self.func.ub[j])
-        tmp = self.pool[0]
-        tmp.f = self.func.fitness(tmp.v)
-        self.last_best.assign(tmp)
-        self.fitness()
+                self.pool[i, j] = rand_v(self.func.lb[j], self.func.ub[j])
+        self.fitness[0] = self.func.fitness(self.pool[0, :])
+        self.set_best(0)
+        self.get_fitness()
 
     cdef inline void cross_over(self):
-        cdef Chromosome c1 = Chromosome.__new__(Chromosome, self.dim)
-        cdef Chromosome c2 = Chromosome.__new__(Chromosome, self.dim)
-        cdef Chromosome c3 = Chromosome.__new__(Chromosome, self.dim)
+        cdef double[:] c1 = self.make_tmp()
+        cdef double[:] c2 = self.make_tmp()
+        cdef double[:] c3 = self.make_tmp()
         cdef uint i, s
-        cdef Chromosome b1, b2
-        for i in range(0, <uint>(self.pop_num - 1), 2):
+        cdef double c1_f, c2_f, c3_f
+        for i in range(0, self.pop_num - 1, 2):
             if not rand_v() < self.cross:
                 continue
-
-            b1 = self.pool[i]
-            b2 = self.pool[i + 1]
             for s in range(self.dim):
                 # first baby, half father half mother
-                c1.v[s] = 0.5 * b1.v[s] + 0.5 * b2.v[s]
+                c1[s] = 0.5 * self.pool[i, s] + 0.5 * self.pool[i + 1, s]
                 # second baby, three quarters of father and quarter of mother
-                c2.v[s] = self.check(s, 1.5 * b1.v[s] - 0.5 * b2.v[s])
+                c2[s] = self.check(s, 1.5 * self.pool[i, s]
+                                   - 0.5 * self.pool[i + 1, s])
                 # third baby, quarter of father and three quarters of mother
-                c3.v[s] = self.check(s, -0.5 * b1.v[s] + 1.5 * b2.v[s])
+                c3[s] = self.check(s, -0.5 * self.pool[i, s]
+                                   + 1.5 * self.pool[i + 1, s])
             # evaluate new baby
-            c1.f = self.func.fitness(c1.v)
-            c2.f = self.func.fitness(c2.v)
-            c3.f = self.func.fitness(c3.v)
+            c1_f = self.func.fitness(c1)
+            c2_f = self.func.fitness(c2)
+            c3_f = self.func.fitness(c3)
             # bubble sort: smaller -> larger
-            if c1.f > c2.f:
+            if c1_f > c2_f:
+                c1_f, c2_f = c2_f, c1_f
                 c1, c2 = c2, c1
-            if c1.f > c3.f:
+            if c1_f > c3_f:
+                c1_f, c3_f = c3_f, c1_f
                 c1, c3 = c3, c1
-            if c2.f > c3.f:
+            if c2_f > c3_f:
+                c2_f, c3_f = c3_f, c2_f
                 c2, c3 = c3, c2
             # replace first two baby to parent, another one will be
-            b1.assign(c1)
-            b2.assign(c2)
+            self.assign_from(i, c1_f, c1)
+            self.assign_from(i + 1, c2_f, c2)
 
-    cdef inline double get_delta(self, double y):
+    cdef inline double get_delta(self, double y) nogil:
         cdef double r
         if self.stop_at == MAX_GEN and self.stop_at_i > 0:
             r = <double>self.func.gen / self.stop_at_i
@@ -115,61 +115,50 @@ cdef class Genetic(Algorithm):
             r = 1
         return y * rand_v() * pow(1.0 - r, self.delta)
 
-    cdef inline void fitness(self):
+    cdef inline void get_fitness(self):
         cdef uint i
-        cdef Chromosome tmp
         for i in range(self.pop_num):
-            tmp = self.pool[i]
-            tmp.f = self.func.fitness(tmp.v)
+            self.fitness[i] = self.func.fitness(self.pool[i, :])
+        cdef uint best = 0
+        for i in range(1, self.pop_num):
+            if self.fitness[i] < self.fitness[best]:
+                best = i
+        if self.fitness[best] < self.best_f:
+            self.set_best(best)
 
-        cdef int index = 0
-        cdef double f = HUGE_VAL
-
-        for i, tmp in enumerate(self.pool):
-            if tmp.f < f:
-                index = i
-                f = tmp.f
-        if f < self.last_best.f:
-            self.last_best.assign(self.pool[index])
-
-    cdef inline void mutate(self):
+    cdef inline void mutate(self) nogil:
         cdef uint i, s
-        cdef Chromosome tmp
         for i in range(self.pop_num):
             if not rand_v() < self.mute:
                 continue
             s = rand_i(self.dim)
-            tmp = self.pool[i]
             if rand_v() < 0.5:
-                tmp.v[s] += self.get_delta(self.func.ub[s] - tmp.v[s])
+                self.pool[i, s] += self.get_delta(self.func.ub[s]
+                                                  - self.pool[i, s])
             else:
-                tmp.v[s] -= self.get_delta(tmp.v[s] - self.func.lb[s])
+                self.pool[i, s] -= self.get_delta(self.pool[i, s]
+                                                  - self.func.lb[s])
 
-    cdef inline void select(self):
+    cdef inline void select(self) nogil:
         """roulette wheel selection"""
         cdef uint i, j, k
-        cdef Chromosome baby, b1, b2
         for i in range(self.pop_num):
             j = rand_i(self.pop_num)
             k = rand_i(self.pop_num)
-            b1 = self.pool[j]
-            b2 = self.pool[k]
-            baby = self.new_pool[i]
-            if b1.f > b2.f and rand_v() < self.win:
-                baby.assign(b2)
+            if self.fitness[j] > self.fitness[k] and rand_v() < self.win:
+                self.backup(i, k)
             else:
-                baby.assign(b1)
+                self.backup(i, j)
         # in this stage, new_chromosome is select finish
         # now replace origin chromosome
         for i in range(self.pop_num):
-            baby = self.pool[i]
-            baby.assign(self.new_pool[i])
+            self.fitness[:] = self.new_fitness
+            self.pool[:] = self.new_pool
         # select random one chromosome to be best chromosome, make best chromosome still exist
-        baby = self.pool[rand_i(self.pop_num)]
-        baby.assign(self.last_best)
+        self.assign_from(rand_i(self.pop_num), self.best_f, self.best)
 
     cdef inline void generation_process(self):
         self.select()
         self.cross_over()
         self.mutate()
-        self.fitness()
+        self.get_fitness()

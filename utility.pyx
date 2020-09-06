@@ -10,8 +10,7 @@ license: AGPL
 email: pyslvs@gmail.com
 """
 
-from numpy import zeros, array, float64 as np_float
-cimport cython
+from numpy import zeros, float64 as np_float
 from libc.stdlib cimport rand, srand, RAND_MAX
 from libc.time cimport time, difftime
 
@@ -24,28 +23,6 @@ cdef inline double rand_v(double lower = 0., double upper = 1.) nogil:
 cdef inline uint rand_i(int upper) nogil:
     """A random integer between 0 <= r < upper."""
     return rand() % upper
-
-
-@cython.final
-@cython.freelist(100)
-cdef class Chromosome:
-    """Data structure class."""
-
-    def __cinit__(self, uint n):
-        self.f = 0.
-        self.v = zeros(n, dtype=np_float)
-
-    cdef void assign(self, Chromosome rhs) nogil:
-        """Assign from an old generation."""
-        if rhs is self:
-            return
-        self.f = rhs.f
-        self.v[:] = rhs.v
-
-    @staticmethod
-    cdef Chromosome[:] new_pop(uint d, uint n):
-        """Create new population."""
-        return array([Chromosome.__new__(Chromosome, d) for _ in range(n)])
 
 
 cdef class ObjFunc:
@@ -103,11 +80,41 @@ cdef class Algorithm:
         self.dim = len(self.func.ub)
         if self.dim != len(self.func.lb):
             raise ValueError("length of upper and lower bounds must be equal")
-        self.last_best = Chromosome.__new__(Chromosome, self.dim)
+        self.best_f = 0
+        self.best = zeros(self.dim, dtype=np_float)
         # setup benchmark
         self.func.gen = 0
         self.time_start = 0
         self.fitness_time = []
+
+    cdef void new_pop(self):
+        """New population."""
+        self.fitness = zeros(self.pop_num, dtype=np_float)
+        self.pool = zeros((self.pop_num, self.dim), dtype=np_float)
+
+    cdef double[:] make_tmp(self):
+        """Make new chromosome."""
+        return zeros(self.dim, dtype=np_float)
+
+    cdef void assign(self, uint i, uint j) nogil:
+        """Copy value from j to i."""
+        self.fitness[i] = self.fitness[j]
+        self.pool[i, :] = self.pool[j, :]
+
+    cdef void assign_from(self, uint i, double f, double[:] v) nogil:
+        """Copy value from tmp."""
+        self.fitness[i] = f
+        self.pool[i, :] = v
+
+    cdef void set_best(self, uint i) nogil:
+        """Set as best."""
+        self.best_f = self.fitness[i]
+        self.best[:] = self.pool[i, :]
+
+    cdef void set_best_from(self, double f, double[:] v) nogil:
+        """Set best from tmp."""
+        self.best_f = f
+        self.best[:] = v
 
     cdef void initialize(self):
         """Initialize function."""
@@ -121,7 +128,7 @@ cdef class Algorithm:
         """Report generation, fitness and time."""
         self.fitness_time.push_back(Report(
             self.func.gen,
-            self.last_best.f,
+            self.best_f,
             difftime(time(NULL), self.time_start),
         ))
 
@@ -158,10 +165,10 @@ cdef class Algorithm:
         self.initialize()
         self.report()
         # Iterations
-        cdef double diff, last_best
+        cdef double diff, best_f
         cdef double last_diff = 0
         while True:
-            last_best = self.last_best.f
+            best_f = self.best_f
             self.func.gen += 1
             self.generation_process()
             if self.func.gen % self.rpt == 0:
@@ -170,21 +177,21 @@ cdef class Algorithm:
                 if self.func.gen >= self.stop_at_i > 0:
                     break
             elif self.stop_at == MIN_FIT:
-                if self.last_best.f <= self.stop_at_f:
+                if self.best_f <= self.stop_at_f:
                     break
             elif self.stop_at == MAX_TIME:
                 if difftime(time(NULL), self.time_start) >= self.stop_at_f > 0:
                     break
             elif self.stop_at == SLOW_DOWN:
-                diff = last_best - self.last_best.f
+                diff = best_f - self.best_f
                 if last_diff > 0 and diff / last_diff >= self.stop_at_f:
                     break
                 last_diff = diff
             # progress
             if self.progress_fun is not None:
-                self.progress_fun(self.func.gen, f"{self.last_best.f:.04f}")
+                self.progress_fun(self.func.gen, f"{self.best_f:.04f}")
             # interrupt
             if (self.interrupt_fun is not None) and self.interrupt_fun():
                 break
         self.report()
-        return self.func.result(self.last_best.v)
+        return self.func.result(self.best)

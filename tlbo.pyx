@@ -13,13 +13,7 @@ cimport cython
 from numpy cimport ndarray
 from numpy import zeros, float64 as np_float
 from libc.math cimport round
-from .utility cimport (
-    rand_v,
-    rand_i,
-    Chromosome,
-    ObjFunc,
-    Algorithm,
-)
+from .utility cimport rand_v, rand_i, ObjFunc, Algorithm
 
 ctypedef unsigned int uint
 
@@ -43,7 +37,7 @@ cdef class TeachingLearning(Algorithm):
         }
         """
         self.pop_num = settings.get('class_size', 50)
-        self.pool = Chromosome.new_pop(self.dim, self.pop_num)
+        self.new_pop()
 
     cdef inline void initialize(self):
         """Initial population: Sorted students."""
@@ -55,15 +49,16 @@ cdef class TeachingLearning(Algorithm):
                 s[i, j] = rand_v(self.func.lb[j], self.func.ub[j])
             s[i, end - 1] = self.func.fitness(s[i, :end - 1])
         s = s[s[:, end - 1].argsort()][::-1]
+        cdef double[:] tmp
         for i in range(self.pop_num):
-            self.pool[i].v = s[i, :end - 1]
-            self.pool[i].f = s[i, end - 1]
-        self.last_best.assign(self.pool[self.pop_num - 1])
+            tmp = s[i, :end - 1]
+            self.pool[i, :] = tmp
+            self.fitness[i] = s[i, end - 1]
+        self.set_best(self.pop_num - 1)
 
     cdef inline void teaching(self, uint index):
         """Teaching phase. The last best is the teacher."""
-        cdef Chromosome student = self.pool[index]
-        cdef double[:] v = zeros(self.dim, dtype=np_float)
+        cdef double[:] tmp = self.make_tmp()
         cdef double tf = round(1 + rand_v())
         cdef uint i, j
         cdef double mean
@@ -72,54 +67,53 @@ cdef class TeachingLearning(Algorithm):
                 return
             mean = 0
             for j in range(self.pop_num):
-                mean += self.pool[j].v[i]
+                mean += self.pool[j, i]
             mean /= self.dim
-            v[i] = student.v[i] + rand_v(1, self.dim) * (self.last_best.v[i] - tf * mean)
-            if v[i] < self.func.lb[i]:
-                v[i] = self.func.lb[i]
-            elif v[i] > self.func.ub[i]:
-                v[i] = self.func.ub[i]
-        cdef double f_new = self.func.fitness(v)
-        if f_new < student.f:
-            student.v[:] = v
-            student.f = f_new
-        if student.f < self.last_best.f:
-            self.last_best.assign(student)
+            tmp[i] = self.pool[index, i] + rand_v(1, self.dim) * (
+                self.best[i] - tf * mean)
+            if tmp[i] < self.func.lb[i]:
+                tmp[i] = self.func.lb[i]
+            elif tmp[i] > self.func.ub[i]:
+                tmp[i] = self.func.ub[i]
+        cdef double f_new = self.func.fitness(tmp)
+        if f_new < self.fitness[index]:
+            self.pool[index, :] = tmp
+            self.fitness[index] = f_new
+        if self.fitness[index] < self.best_f:
+            self.set_best(index)
 
     cdef inline void learning(self, uint index):
         """Learning phase."""
-        cdef Chromosome student_a = self.pool[index]
         cdef uint cmp_index = rand_i(self.pop_num - 1)
         if cmp_index >= index:
             cmp_index += 1
-        cdef Chromosome student_b = self.pool[cmp_index]
-        cdef double[:] v = zeros(self.dim, dtype=np_float)
-        cdef uint i
+        cdef double[:] v = self.make_tmp()
+        cdef uint s
         cdef double diff
-        for i in range(self.dim):
+        for s in range(self.dim):
             if self.state_check():
                 return
-            if student_b.f < student_a.f:
-                diff = student_a.v[i] - student_b.v[i]
+            if self.fitness[cmp_index] < self.fitness[index]:
+                diff = self.pool[index, s] - self.pool[cmp_index, s]
             else:
-                diff = student_b.v[i] - student_a.v[i]
-            v[i] = student_a.v[i] + diff * rand_v(1, self.dim)
-            if v[i] < self.func.lb[i]:
-                v[i] = self.func.lb[i]
-            elif v[i] > self.func.ub[i]:
-                v[i] = self.func.ub[i]
+                diff = self.pool[cmp_index, s] - self.pool[index, s]
+            v[s] = self.pool[index, s] + diff * rand_v(1, self.dim)
+            if v[s] < self.func.lb[s]:
+                v[s] = self.func.lb[s]
+            elif v[s] > self.func.ub[s]:
+                v[s] = self.func.ub[s]
         cdef double f_new = self.func.fitness(v)
-        if f_new < student_a.f:
-            student_a.v[:] = v
-            student_a.f = f_new
-        if student_a.f < self.last_best.f:
-            self.last_best.assign(student_a)
+        if f_new < self.fitness[index]:
+            self.pool[index, :] = v
+            self.fitness[index] = f_new
+        if self.fitness[index] < self.best_f:
+            self.set_best(index)
 
     cdef inline bint state_check(self) nogil:
         """Check status."""
         if self.progress_fun is not None:
             with gil:
-                self.progress_fun(self.func.gen, f"{self.last_best.f:.04f}")
+                self.progress_fun(self.func.gen, f"{self.best_f:.04f}")
         if self.interrupt_fun is not None:
             with gil:
                 if self.interrupt_fun():

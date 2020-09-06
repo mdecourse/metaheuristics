@@ -30,15 +30,6 @@ cdef double rand_v(double lower = *, double upper = *) nogil
 cdef uint rand_i(int upper) nogil
 
 
-cdef class Chromosome:
-    cdef double f
-    cdef double[:] v
-
-    cdef void assign(self, Chromosome rhs) nogil
-    @staticmethod
-    cdef Chromosome[:] new_pop(uint d, uint n)
-
-
 cdef class ObjFunc:
     cdef uint gen
     cdef double[:] ub
@@ -49,15 +40,23 @@ cdef class ObjFunc:
 
 
 cdef class Algorithm:
-    cdef public ObjFunc func
     cdef uint pop_num, dim, stop_at_i, rpt
-    cdef double stop_at_f
-    cdef time_t time_start
     cdef Task stop_at
+    cdef double stop_at_f, best_f
+    cdef double[:] best, fitness
+    cdef double[:, :] pool
+    cdef time_t time_start
     cdef clist[Report] fitness_time
-    cdef Chromosome last_best
-    cdef Chromosome[:] pool
     cdef object progress_fun, interrupt_fun
+    cdef public ObjFunc func
+
+    # Chromosome
+    cdef void new_pop(self)
+    cdef double[:] make_tmp(self)
+    cdef void assign(self, uint i, uint j) nogil
+    cdef void assign_from(self, uint i, double f, double[:] v) nogil
+    cdef void set_best(self, uint i) nogil
+    cdef void set_best_from(self, double f, double[:] v) nogil
 
     cdef void initialize(self)
     cdef void generation_process(self)

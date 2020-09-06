@@ -10,24 +10,19 @@ email: pyslvs@gmail.com
 """
 
 cimport cython
-from libc.math cimport exp, log10, sqrt, HUGE_VAL
-from .utility cimport (
-    rand_v,
-    Chromosome,
-    ObjFunc,
-    Algorithm,
-)
+from libc.math cimport exp, log10, sqrt
+from .utility cimport rand_v, ObjFunc, Algorithm
 
 ctypedef unsigned int uint
 
 
-cdef double _distance(Chromosome me, Chromosome she, uint dim):
+cdef double _distance(double[:] me, double[:] she, uint dim) nogil:
     """Distance of two fireflies."""
     cdef double dist = 0
     cdef uint i
     cdef double diff
     for i in range(dim):
-        diff = me.v[i] - she.v[i]
+        diff = me[i] - she[i]
         dist += diff * diff
     return sqrt(dist)
 
@@ -68,56 +63,49 @@ cdef class Firefly(Algorithm):
         # gamma
         self.gamma = settings.get('gamma', 1.)
         # all fireflies, depended on population n
-        self.pool = Chromosome.new_pop(self.dim, self.pop_num)
+        self.new_pop()
 
     cdef inline void initialize(self):
         cdef uint i, j
-        cdef Chromosome tmp
         for i in range(self.pop_num):
-            # initialize the Chromosome
-            tmp = self.pool[i]
             for j in range(self.dim):
-                tmp.v[j] = rand_v(self.func.lb[j], self.func.ub[j])
+                self.pool[i, j] = rand_v(self.func.lb[j], self.func.ub[j])
         self.evaluate()
-        self.last_best.assign(self.pool[0])
+        self.set_best(0)
 
-    cdef inline void move_fireflies(self):
-        cdef uint i
+    cdef inline void move_fireflies(self) nogil:
         cdef bint is_move
+        cdef uint i, j, s
         cdef double scale, tmp_v
-        cdef Chromosome tmp, other
-        for tmp in self.pool:
-            is_move = False
-            for other in self.pool:
-                if tmp is other:
+        for i in range(self.pop_num):
+            moved = False
+            for j in range(self.pop_num):
+                if i == j:
                     continue
-                is_move |= self.move_firefly(tmp, other)
-            if is_move:
+                if self.fitness[i] > self.fitness[j]:
+                    self.move_firefly(self.pool[i, :], self.pool[j, :])
+                    moved = True
+            if moved:
                 continue
-            for i in range(self.dim):
-                scale = self.func.ub[i] - self.func.lb[i]
-                tmp_v = tmp.v[i] + self.alpha * scale * rand_v(-0.5, 0.5)
-                tmp.v[i] = self.check(i, tmp_v)
+            for s in range(self.dim):
+                self.pool[i, s] = self.check(i, self.pool[i, s] + self.alpha * (
+                    self.func.ub[s] - self.func.lb[s]) * rand_v(-0.5, 0.5))
 
     cdef inline void evaluate(self):
-        cdef Chromosome firefly
-        for firefly in self.pool:
-            firefly.f = self.func.fitness(firefly.v)
+        for i in range(self.pop_num):
+            self.fitness[i] = self.func.fitness(self.pool[i, :])
 
-    cdef inline bint move_firefly(self, Chromosome me, Chromosome she):
-        if me.f <= she.f:
-            return False
+    cdef inline void move_firefly(self, double[:] me, double[:] she) nogil:
         cdef double r = _distance(me, she, self.dim)
-        cdef double beta = (self.beta0 - self.beta_min) * exp(-self.gamma * r * r) + self.beta_min
+        cdef double beta = ((self.beta0 - self.beta_min)
+                            * exp(-self.gamma * r * r) + self.beta_min)
         cdef uint i
-        cdef double scale, me_v
         for i in range(self.dim):
-            scale = self.func.ub[i] - self.func.lb[i]
-            me_v = me.v[i] + beta * (she.v[i] - me.v[i]) + self.alpha * scale * rand_v(-0.5, 0.5)
-            me.v[i] = self.check(i, me_v)
-        return True
+            me[i] = self.check(i, me[i] + beta * (she[i] - me[i]) + self.alpha
+                               * (self.func.ub[i] - self.func.lb[i])
+                               * rand_v(-0.5, 0.5))
 
-    cdef inline double check(self, int i, double v):
+    cdef inline double check(self, int i, double v) nogil:
         if v > self.func.ub[i]:
             return self.func.ub[i]
         elif v < self.func.lb[i]:
@@ -125,24 +113,20 @@ cdef class Firefly(Algorithm):
         else:
             return v
 
-    cdef inline Chromosome find_firefly(self):
-        cdef int index = 0
-        cdef double f = HUGE_VAL
-        cdef int i
-        cdef Chromosome tmp
-        for i, tmp in enumerate(self.pool):
-            if tmp.f < f:
-                index = i
-                f = tmp.f
-        return self.pool[index]
+    cdef inline void find_firefly(self) nogil:
+        cdef uint best = 0
+        cdef uint i
+        for i in range(1, self.pop_num):
+            if self.fitness[i] < self.fitness[best]:
+                best = i
+        if self.best_f > self.fitness[best]:
+            self.set_best(best)
+        # adjust alpha, depended on fitness value
+        # if fitness value is larger, then alpha should larger
+        # if fitness value is small, then alpha should smaller
+        self.alpha = self.alpha0 * log10(self.fitness[best] + 1)
 
     cdef inline void generation_process(self):
         self.move_fireflies()
         self.evaluate()
-        # adjust alpha, depended on fitness value
-        # if fitness value is larger, then alpha should larger
-        # if fitness value is small, then alpha should smaller
-        cdef Chromosome current_best = self.find_firefly()
-        if self.last_best.f > current_best.f:
-            self.last_best.assign(current_best)
-        self.alpha = self.alpha0 * log10(current_best.f + 1)
+        self.find_firefly()
