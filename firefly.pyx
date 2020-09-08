@@ -73,6 +73,10 @@ cdef class Firefly(Algorithm):
         self.evaluate()
         self.set_best(0)
 
+    cdef inline void evaluate(self):
+        for i in range(self.pop_num):
+            self.fitness[i] = self.func.fitness(self.pool[i, :])
+
     cdef inline void move_fireflies(self) nogil:
         cdef bint is_move
         cdef uint i, j, s
@@ -80,20 +84,15 @@ cdef class Firefly(Algorithm):
         for i in range(self.pop_num):
             moved = False
             for j in range(self.pop_num):
-                if i == j:
+                if i == j or self.fitness[i] <= self.fitness[j]:
                     continue
-                if self.fitness[i] > self.fitness[j]:
-                    self.move_firefly(self.pool[i, :], self.pool[j, :])
-                    moved = True
+                self.move_firefly(self.pool[i, :], self.pool[j, :])
+                moved = True
             if moved:
                 continue
             for s in range(self.dim):
-                self.pool[i, s] = self.check(i, self.pool[i, s] + self.alpha * (
+                self.pool[i, s] = self.check(s, self.pool[i, s] + self.alpha * (
                     self.func.ub[s] - self.func.lb[s]) * rand_v(-0.5, 0.5))
-
-    cdef inline void evaluate(self):
-        for i in range(self.pop_num):
-            self.fitness[i] = self.func.fitness(self.pool[i, :])
 
     cdef inline void move_firefly(self, double[:] me, double[:] she) nogil:
         cdef double r = _distance(me, she, self.dim)
@@ -116,7 +115,7 @@ cdef class Firefly(Algorithm):
 
     cdef inline void find_firefly(self) nogil:
         cdef uint best = self.find_best()
-        if self.best_f > self.fitness[best]:
+        if self.fitness[best] < self.best_f:
             self.set_best(best)
         # adjust alpha, depended on fitness value
         # if fitness value is larger, then alpha should larger

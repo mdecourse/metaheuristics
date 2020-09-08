@@ -180,22 +180,20 @@ cdef class Differential(Algorithm):
         cdef uint i
         cdef double tmp_f
         for i in range(self.pop_num):
-            # generate new vector
+            # Generate a new vector
             self.generate_random_vector(i)
-            # use the vector recombine the member to temporary
+            # Use the vector recombine the member to temporary
             self.recombination(i)
-            # check the one is out of bound?
+            # Check the one is out of bound
             if self.over_bound(self.tmp):
-                # if it is, then abandon it
                 continue
-            # is not out of bound, that mean it's qualify of environment
-            # then evaluate the one
             tmp_f = self.func.fitness(self.tmp)
-            # if temporary one is better than origin(fitness value is smaller)
-            if tmp_f <= self.fitness[i]:
-                # copy the temporary one to origin member
-                self.assign_from(i, tmp_f, self.tmp)
-                # check the temporary one is better than the current_best
-                if tmp_f < self.best_f:
-                    # copy the temporary one to current_best
-                    self.set_best_from(tmp_f, self.tmp)
+            # Check if temporary one is better than original one
+            if tmp_f > self.fitness[i]:
+                continue
+            # copy the temporary one to origin member
+            self.assign_from(i, tmp_f, self.tmp)
+            # check the temporary one is better than the current_best
+            if tmp_f < self.best_f:
+                # copy the temporary one to current_best
+                self.set_best_from(tmp_f, self.tmp)
