@@ -13,7 +13,7 @@ cimport cython
 from .utility cimport rand_v, rand_i, ObjFunc, Algorithm
 
 ctypedef unsigned int uint
-ctypedef void (*Eq)(Differential, uint, double[:]) nogil
+ctypedef void (*Eq)(Differential, uint) nogil
 
 
 cdef enum Strategy:
@@ -82,15 +82,10 @@ cdef class Differential(Algorithm):
             for j in range(self.dim):
                 self.pool[i, j] = rand_v(self.func.lb[j], self.func.ub[j])
             self.fitness[i] = self.func.fitness(self.pool[i, :])
-        # Find best
-        cdef uint best = 0
-        for i in range(1, self.pop_num):
-            if self.fitness[i] < self.fitness[best]:
-                best = i
-        self.set_best(best)
+        self.set_best(self.find_best())
 
     cdef inline void generate_random_vector(self, uint i) nogil:
-        """Generate new vector."""
+        """Generate new vectors."""
         self.r1 = self.r2 = self.r3 = self.r4 = self.r5 = i
         while self.r1 == i:
             self.r1 = rand_i(self.pop_num)
@@ -109,73 +104,71 @@ cdef class Differential(Algorithm):
         while self.r5 in {i, self.r1, self.r2, self.r3, self.r4}:
             self.r5 = rand_i(self.pop_num)
 
-    cdef void type1(self, double[:] tmp, Eq func) nogil:
+    cdef void type1(self, Eq func) nogil:
         cdef uint n = rand_i(self.dim)
         cdef uint l_v = 0
         while True:
-            func(self, n, tmp)
+            func(self, n)
             n = (n + 1) % self.dim
             l_v += 1
             if rand_v() >= self.CR or l_v >= self.dim:
                 break
 
-    cdef void type2(self, double[:] tmp, Eq func) nogil:
+    cdef void type2(self, Eq func) nogil:
         cdef uint n = rand_i(self.dim)
         cdef uint l_v
         for l_v in range(self.dim):
             if rand_v() < self.CR or l_v == self.dim - 1:
-                func(self, n, tmp)
+                func(self, n)
             n = (n + 1) % self.dim
 
-    cdef void eq1(self, uint n, double[:] tmp) nogil:
-        tmp[n] = self.best[n] + self.F * (
+    cdef void eq1(self, uint n) nogil:
+        self.tmp[n] = self.best[n] + self.F * (
             self.pool[self.r1, n] - self.pool[self.r2, n])
 
-    cdef void eq2(self, uint n, double[:] tmp) nogil:
-        tmp[n] = self.pool[self.r1, n] + self.F * (
+    cdef void eq2(self, uint n) nogil:
+        self.tmp[n] = self.pool[self.r1, n] + self.F * (
             self.pool[self.r2, n] - self.pool[self.r3, n])
 
-    cdef void eq3(self, uint n, double[:] tmp) nogil:
-        tmp[n] = tmp[n] + self.F * (self.best[n] - tmp[n]) + self.F * (
-                self.pool[self.r1, n] - self.pool[self.r2, n])
+    cdef void eq3(self, uint n) nogil:
+        self.tmp[n] = (self.tmp[n] + self.F * (self.best[n] - self.tmp[n])
+                       + self.F * (self.pool[self.r1, n] - self.pool[self.r2, n]))
 
-    cdef void eq4(self, uint n, double[:] tmp) nogil:
-        tmp[n] = self.best[n] + self.F * (
+    cdef void eq4(self, uint n) nogil:
+        self.tmp[n] = self.best[n] + self.F * (
             self.pool[self.r1, n] + self.pool[self.r2, n]
             - self.pool[self.r3, n] - self.pool[self.r4, n])
 
-    cdef void eq5(self, uint n, double[:] tmp) nogil:
-        tmp[n] = self.pool[self.r5, n] + self.F * (
+    cdef void eq5(self, uint n) nogil:
+        self.tmp[n] = self.pool[self.r5, n] + self.F * (
             self.pool[self.r1, n] + self.pool[self.r2, n]
             - self.pool[self.r3, n] - self.pool[self.r4, n])
 
-    cdef inline double[:] recombination(self, int i):
+    cdef inline void recombination(self, int i) nogil:
         """use new vector, recombination the new one member to tmp."""
-        cdef double[:] tmp = self.make_tmp()
-        tmp[:] = self.pool[i, :]
+        self.tmp[:] = self.pool[i, :]
         if self.strategy == 1:
-            self.type1(tmp, Differential.eq1)
+            self.type1(Differential.eq1)
         elif self.strategy == 2:
-            self.type1(tmp, Differential.eq2)
+            self.type1(Differential.eq2)
         elif self.strategy == 3:
-            self.type1(tmp, Differential.eq3)
+            self.type1(Differential.eq3)
         elif self.strategy == 4:
-            self.type1(tmp, Differential.eq4)
+            self.type1(Differential.eq4)
         elif self.strategy == 5:
-            self.type1(tmp, Differential.eq5)
+            self.type1(Differential.eq5)
         elif self.strategy == 6:
-            self.type2(tmp, Differential.eq1)
+            self.type2(Differential.eq1)
         elif self.strategy == 7:
-            self.type2(tmp, Differential.eq2)
+            self.type2(Differential.eq2)
         elif self.strategy == 8:
-            self.type2(tmp, Differential.eq3)
+            self.type2(Differential.eq3)
         elif self.strategy == 9:
-            self.type2(tmp, Differential.eq4)
+            self.type2(Differential.eq4)
         elif self.strategy == 0:
-            self.type2(tmp, Differential.eq5)
-        return tmp
+            self.type2(Differential.eq5)
 
-    cdef inline bint over_bound(self, double[:] member):
+    cdef inline bint over_bound(self, double[:] member) nogil:
         """check the member's chromosome that is out of bound?"""
         cdef uint i
         for i in range(self.dim):
@@ -186,24 +179,23 @@ cdef class Differential(Algorithm):
     cdef inline void generation_process(self):
         cdef uint i
         cdef double tmp_f
-        cdef double[:] tmp
         for i in range(self.pop_num):
             # generate new vector
             self.generate_random_vector(i)
             # use the vector recombine the member to temporary
-            tmp = self.recombination(i)
+            self.recombination(i)
             # check the one is out of bound?
-            if self.over_bound(tmp):
+            if self.over_bound(self.tmp):
                 # if it is, then abandon it
                 continue
             # is not out of bound, that mean it's qualify of environment
             # then evaluate the one
-            tmp_f = self.func.fitness(tmp)
+            tmp_f = self.func.fitness(self.tmp)
             # if temporary one is better than origin(fitness value is smaller)
             if tmp_f <= self.fitness[i]:
                 # copy the temporary one to origin member
-                self.assign_from(i, tmp_f, tmp)
+                self.assign_from(i, tmp_f, self.tmp)
                 # check the temporary one is better than the current_best
                 if tmp_f < self.best_f:
                     # copy the temporary one to current_best
-                    self.set_best_from(tmp_f, tmp)
+                    self.set_best_from(tmp_f, self.tmp)

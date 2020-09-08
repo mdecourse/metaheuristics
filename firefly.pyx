@@ -52,13 +52,13 @@ cdef class Firefly(Algorithm):
         """
         # n, the population size of fireflies
         self.pop_num = settings.get('n', 80)
-        # alpha, the step size
+        # alpha, the step size (adjustable)
         self.alpha = settings.get('alpha', 0.01)
-        # alpha0, use to calculate_new_alpha
+        # alpha0, the origin alpha value
         self.alpha0 = self.alpha
         # beta_min, the minimal attraction, must not less than this
         self.beta_min = settings.get('beta_min', 0.2)
-        # beta0, the attraction of two firefly in 0 distance.
+        # beta0, the attraction of two firefly in 0 distance
         self.beta0 = settings.get('beta0', 1.)
         # gamma
         self.gamma = settings.get('gamma', 1.)
@@ -106,6 +106,7 @@ cdef class Firefly(Algorithm):
                                * rand_v(-0.5, 0.5))
 
     cdef inline double check(self, int i, double v) nogil:
+        """Check the bounds."""
         if v > self.func.ub[i]:
             return self.func.ub[i]
         elif v < self.func.lb[i]:
@@ -114,11 +115,7 @@ cdef class Firefly(Algorithm):
             return v
 
     cdef inline void find_firefly(self) nogil:
-        cdef uint best = 0
-        cdef uint i
-        for i in range(1, self.pop_num):
-            if self.fitness[i] < self.fitness[best]:
-                best = i
+        cdef uint best = self.find_best()
         if self.best_f > self.fitness[best]:
             self.set_best(best)
         # adjust alpha, depended on fitness value

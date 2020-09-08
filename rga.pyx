@@ -21,7 +21,7 @@ ctypedef unsigned int uint
 cdef class Genetic(Algorithm):
     """The implementation of Real-coded Genetic Algorithm."""
     cdef double cross, mute, win, delta
-    cdef double[:] new_fitness
+    cdef double[:] new_fitness, tmp2, tmp3
     cdef double[:, :] new_pool
 
     def __cinit__(
@@ -50,11 +50,8 @@ cdef class Genetic(Algorithm):
         self.new_pop()
         self.new_fitness = zeros(self.pop_num, dtype=np_float)
         self.new_pool = zeros((self.pop_num, self.dim), dtype=np_float)
-
-    cdef inline void backup(self, uint i, uint j) nogil:
-        """Backup individual."""
-        self.new_fitness[i] = self.fitness[j]
-        self.new_pool[i, :] = self.pool[j, :]
+        self.tmp2 = self.make_tmp()
+        self.tmp3 = self.make_tmp()
 
     cdef inline double check(self, int i, double v) nogil:
         """If a variable is out of bound, replace it with a random value."""
@@ -71,10 +68,7 @@ cdef class Genetic(Algorithm):
         self.set_best(0)
         self.get_fitness()
 
-    cdef inline void cross_over(self):
-        cdef double[:] c1 = self.make_tmp()
-        cdef double[:] c2 = self.make_tmp()
-        cdef double[:] c3 = self.make_tmp()
+    cdef inline void cross_over(self) nogil:
         cdef uint i, s
         cdef double c1_f, c2_f, c3_f
         for i in range(0, self.pop_num - 1, 2):
@@ -82,30 +76,31 @@ cdef class Genetic(Algorithm):
                 continue
             for s in range(self.dim):
                 # first baby, half father half mother
-                c1[s] = 0.5 * self.pool[i, s] + 0.5 * self.pool[i + 1, s]
+                self.tmp[s] = 0.5 * self.pool[i, s] + 0.5 * self.pool[i + 1, s]
                 # second baby, three quarters of father and quarter of mother
-                c2[s] = self.check(s, 1.5 * self.pool[i, s]
+                self.tmp2[s] = self.check(s, 1.5 * self.pool[i, s]
                                    - 0.5 * self.pool[i + 1, s])
                 # third baby, quarter of father and three quarters of mother
-                c3[s] = self.check(s, -0.5 * self.pool[i, s]
+                self.tmp3[s] = self.check(s, -0.5 * self.pool[i, s]
                                    + 1.5 * self.pool[i + 1, s])
             # evaluate new baby
-            c1_f = self.func.fitness(c1)
-            c2_f = self.func.fitness(c2)
-            c3_f = self.func.fitness(c3)
+            with gil:
+                c1_f = self.func.fitness(self.tmp)
+                c2_f = self.func.fitness(self.tmp2)
+                c3_f = self.func.fitness(self.tmp3)
             # bubble sort: smaller -> larger
             if c1_f > c2_f:
                 c1_f, c2_f = c2_f, c1_f
-                c1, c2 = c2, c1
+                self.tmp, self.tmp2 = self.tmp2, self.tmp
             if c1_f > c3_f:
                 c1_f, c3_f = c3_f, c1_f
-                c1, c3 = c3, c1
+                self.tmp, self.tmp3 = self.tmp3, self.tmp
             if c2_f > c3_f:
                 c2_f, c3_f = c3_f, c2_f
-                c2, c3 = c3, c2
+                self.tmp2, self.tmp3 = self.tmp3, self.tmp2
             # replace first two baby to parent, another one will be
-            self.assign_from(i, c1_f, c1)
-            self.assign_from(i + 1, c2_f, c2)
+            self.assign_from(i, c1_f, self.tmp)
+            self.assign_from(i + 1, c2_f, self.tmp2)
 
     cdef inline double get_delta(self, double y) nogil:
         cdef double r
@@ -119,10 +114,7 @@ cdef class Genetic(Algorithm):
         cdef uint i
         for i in range(self.pop_num):
             self.fitness[i] = self.func.fitness(self.pool[i, :])
-        cdef uint best = 0
-        for i in range(1, self.pop_num):
-            if self.fitness[i] < self.fitness[best]:
-                best = i
+        cdef uint best = self.find_best()
         if self.fitness[best] < self.best_f:
             self.set_best(best)
 
@@ -146,9 +138,11 @@ cdef class Genetic(Algorithm):
             j = rand_i(self.pop_num)
             k = rand_i(self.pop_num)
             if self.fitness[j] > self.fitness[k] and rand_v() < self.win:
-                self.backup(i, k)
+                self.new_fitness[i] = self.fitness[k]
+                self.new_pool[i, :] = self.pool[k, :]
             else:
-                self.backup(i, j)
+                self.new_fitness[i] = self.fitness[j]
+                self.new_pool[i, :] = self.pool[j, :]
         # in this stage, new_chromosome is select finish
         # now replace origin chromosome
         for i in range(self.pop_num):

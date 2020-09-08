@@ -86,6 +86,8 @@ cdef class Algorithm:
         self.func.gen = 0
         self.time_start = 0
         self.fitness_time = []
+        # Temporary zone
+        self.tmp = self.make_tmp()
 
     cdef void new_pop(self):
         """New population."""
@@ -115,6 +117,15 @@ cdef class Algorithm:
         """Set best from tmp."""
         self.best_f = f
         self.best[:] = v
+
+    cdef uint find_best(self) nogil:
+        """Find the best."""
+        cdef uint best = 0
+        cdef uint i
+        for i in range(1, self.pop_num):
+            if self.fitness[i] < self.fitness[best]:
+                best = i
+        return best
 
     cdef void initialize(self):
         """Initialize function."""
