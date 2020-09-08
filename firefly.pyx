@@ -10,7 +10,7 @@ email: pyslvs@gmail.com
 """
 
 cimport cython
-from libc.math cimport exp, log10, sqrt
+from libc.math cimport exp, sqrt
 from .utility cimport rand_v, ObjFunc, Algorithm
 
 ctypedef unsigned int uint
@@ -30,7 +30,7 @@ cdef double _distance(double[:] me, double[:] she, uint dim) nogil:
 @cython.final
 cdef class Firefly(Algorithm):
     """The implementation of Firefly Algorithm."""
-    cdef double alpha, alpha0, beta_min, beta0, gamma
+    cdef double alpha, beta_min, beta0, gamma
 
     def __cinit__(
         self,
@@ -52,10 +52,8 @@ cdef class Firefly(Algorithm):
         """
         # n, the population size of fireflies
         self.pop_num = settings.get('n', 80)
-        # alpha, the step size (adjustable)
+        # alpha, the step size
         self.alpha = settings.get('alpha', 0.01)
-        # alpha0, the origin alpha value
-        self.alpha0 = self.alpha
         # beta_min, the minimal attraction, must not less than this
         self.beta_min = settings.get('beta_min', 0.2)
         # beta0, the attraction of two firefly in 0 distance
@@ -117,10 +115,6 @@ cdef class Firefly(Algorithm):
         cdef uint best = self.find_best()
         if self.fitness[best] < self.best_f:
             self.set_best(best)
-        # adjust alpha, depended on fitness value
-        # if fitness value is larger, then alpha should larger
-        # if fitness value is small, then alpha should smaller
-        self.alpha = self.alpha0 * log10(self.fitness[best] + 1)
 
     cdef inline void generation_process(self):
         self.move_fireflies()
