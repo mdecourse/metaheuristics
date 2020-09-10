@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# cython: language_level=3, cdivision=True
+# cython: language_level=3, cdivision=True, boundscheck=False, wraparound=False
 
 """Real-coded Genetic Algorithm
 
