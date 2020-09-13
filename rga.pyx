@@ -84,10 +84,9 @@ cdef class Genetic(Algorithm):
                 self.tmp3[s] = self.check(s, -0.5 * self.pool[i, s]
                                    + 1.5 * self.pool[i + 1, s])
             # evaluate new baby
-            with gil:
-                c1_f = self.func.fitness(self.tmp)
-                c2_f = self.func.fitness(self.tmp2)
-                c3_f = self.func.fitness(self.tmp3)
+            c1_f = self.func.fitness(self.tmp)
+            c2_f = self.func.fitness(self.tmp2)
+            c3_f = self.func.fitness(self.tmp3)
             # bubble sort: smaller -> larger
             if c1_f > c2_f:
                 c1_f, c2_f = c2_f, c1_f
@@ -110,7 +109,7 @@ cdef class Genetic(Algorithm):
             r = 1
         return y * rand_v() * pow(1.0 - r, self.delta)
 
-    cdef inline void get_fitness(self):
+    cdef inline void get_fitness(self) nogil:
         cdef uint i
         for i in range(self.pop_num):
             self.fitness[i] = self.func.fitness(self.pool[i, :])
@@ -151,7 +150,7 @@ cdef class Genetic(Algorithm):
         # select random one chromosome to be best chromosome, make best chromosome still exist
         self.assign_from(rand_i(self.pop_num), self.best_f, self.best)
 
-    cdef inline void generation_process(self):
+    cdef inline void generation_process(self) nogil:
         self.select()
         self.cross_over()
         self.mutate()

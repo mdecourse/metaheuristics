@@ -71,7 +71,7 @@ cdef class Firefly(Algorithm):
         self.evaluate()
         self.set_best(0)
 
-    cdef inline void evaluate(self):
+    cdef inline void evaluate(self) nogil:
         for i in range(self.pop_num):
             self.fitness[i] = self.func.fitness(self.pool[i, :])
 
@@ -116,7 +116,7 @@ cdef class Firefly(Algorithm):
         if self.fitness[best] < self.best_f:
             self.set_best(best)
 
-    cdef inline void generation_process(self):
+    cdef inline void generation_process(self) nogil:
         self.move_fireflies()
         self.evaluate()
         self.find_firefly()

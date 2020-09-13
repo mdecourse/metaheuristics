@@ -72,9 +72,7 @@ cdef class TeachingLearning(Algorithm):
                 self.tmp[i] = self.func.lb[i]
             elif self.tmp[i] > self.func.ub[i]:
                 self.tmp[i] = self.func.ub[i]
-        cdef double f_new
-        with gil:
-            f_new = self.func.fitness(self.tmp)
+        cdef double f_new = self.func.fitness(self.tmp)
         if f_new < self.fitness[index]:
             self.pool[index, :] = self.tmp
             self.fitness[index] = f_new
@@ -98,23 +96,16 @@ cdef class TeachingLearning(Algorithm):
                 self.tmp[s] = self.func.lb[s]
             elif self.tmp[s] > self.func.ub[s]:
                 self.tmp[s] = self.func.ub[s]
-        cdef double f_new
-        with gil:
-            f_new = self.func.fitness(self.tmp)
+        cdef double f_new = self.func.fitness(self.tmp)
         if f_new < self.fitness[index]:
             self.pool[index, :] = self.tmp
             self.fitness[index] = f_new
         if self.fitness[index] < self.best_f:
             self.set_best(index)
 
-    cdef inline void generation_process(self):
+    cdef inline void generation_process(self) nogil:
         """The process of each generation."""
         cdef uint i
         for i in range(self.pop_num):
-            if self.progress_fun is not None:
-                self.progress_fun(self.func.gen, f"{self.best_f:.04f}")
-            if self.interrupt_fun is not None:
-                if self.interrupt_fun():
-                    break
             self.teaching(i)
             self.learning(i)

@@ -13,6 +13,7 @@ email: pyslvs@gmail.com
 from numpy import zeros, float64 as np_float
 from libc.stdlib cimport rand, srand, RAND_MAX
 from libc.time cimport time, difftime
+from cython.parallel cimport prange
 
 
 cdef inline double rand_v(double lower = 0., double upper = 1.) nogil:
@@ -31,8 +32,9 @@ cdef class ObjFunc:
     It is used to build the objective function for Meta-heuristic Algorithms.
     """
 
-    cdef double fitness(self, double[:] v):
-        raise NotImplementedError
+    cdef double fitness(self, double[:] v) nogil:
+        with gil:
+            raise NotImplementedError
 
     cpdef object result(self, double[:] v):
         """Return the result from the variable list `v`."""
@@ -131,9 +133,10 @@ cdef class Algorithm:
         """Initialize function."""
         raise NotImplementedError
 
-    cdef void generation_process(self):
+    cdef void generation_process(self) nogil:
         """The process of each generation."""
-        raise NotImplementedError
+        with gil:
+            raise NotImplementedError
 
     cdef inline void report(self) nogil:
         """Report generation, fitness and time."""
@@ -202,7 +205,7 @@ cdef class Algorithm:
             if self.progress_fun is not None:
                 self.progress_fun(self.func.gen, f"{self.best_f:.04f}")
             # interrupt
-            if (self.interrupt_fun is not None) and self.interrupt_fun():
+            if self.interrupt_fun is not None and self.interrupt_fun():
                 break
         self.report()
         return self.func.result(self.best)

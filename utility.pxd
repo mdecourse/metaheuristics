@@ -35,7 +35,7 @@ cdef class ObjFunc:
     cdef double[:] ub
     cdef double[:] lb
 
-    cdef double fitness(self, double[:] v)
+    cdef double fitness(self, double[:] v) nogil
     cpdef object result(self, double[:] v)
 
 
@@ -60,7 +60,7 @@ cdef class Algorithm:
     cdef uint find_best(self) nogil
 
     cdef void initialize(self)
-    cdef void generation_process(self)
+    cdef void generation_process(self) nogil
     cdef void report(self) nogil
     cpdef list history(self)
     cpdef object run(self)

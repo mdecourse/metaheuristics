@@ -176,7 +176,7 @@ cdef class Differential(Algorithm):
                 return True
         return False
 
-    cdef inline void generation_process(self):
+    cdef inline void generation_process(self) nogil:
         cdef uint i
         cdef double tmp_f
         for i in range(self.pop_num):
