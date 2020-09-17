@@ -64,14 +64,14 @@ cdef class Firefly(Algorithm):
         self.new_pop()
 
     cdef inline void initialize(self):
-        cdef uint i, j
+        cdef uint i, s
         for i in range(self.pop_num):
-            for j in range(self.dim):
-                self.pool[i, j] = rand_v(self.func.lb[j], self.func.ub[j])
-        self.evaluate()
+            for s in range(self.dim):
+                self.pool[i, s] = rand_v(self.func.lb[s], self.func.ub[s])
+        self.get_fitness()
         self.set_best(0)
 
-    cdef inline void evaluate(self) nogil:
+    cdef inline void get_fitness(self) nogil:
         for i in range(self.pop_num):
             self.fitness[i] = self.func.fitness(self.pool[i, :])
 
@@ -88,6 +88,7 @@ cdef class Firefly(Algorithm):
                 moved = True
             if moved:
                 continue
+            # Evaluate
             for s in range(self.dim):
                 self.pool[i, s] = self.check(s, self.pool[i, s] + self.alpha * (
                     self.func.ub[s] - self.func.lb[s]) * rand_v(-0.5, 0.5))
@@ -96,18 +97,18 @@ cdef class Firefly(Algorithm):
         cdef double r = _distance(me, she, self.dim)
         cdef double beta = ((self.beta0 - self.beta_min)
                             * exp(-self.gamma * r * r) + self.beta_min)
-        cdef uint i
-        for i in range(self.dim):
-            me[i] = self.check(i, me[i] + beta * (she[i] - me[i]) + self.alpha
-                               * (self.func.ub[i] - self.func.lb[i])
+        cdef uint s
+        for s in range(self.dim):
+            me[s] = self.check(s, me[s] + beta * (she[s] - me[s]) + self.alpha
+                               * (self.func.ub[s] - self.func.lb[s])
                                * rand_v(-0.5, 0.5))
 
-    cdef inline double check(self, int i, double v) nogil:
+    cdef inline double check(self, int s, double v) nogil:
         """Check the bounds."""
-        if v > self.func.ub[i]:
-            return self.func.ub[i]
-        elif v < self.func.lb[i]:
-            return self.func.lb[i]
+        if v > self.func.ub[s]:
+            return self.func.ub[s]
+        elif v < self.func.lb[s]:
+            return self.func.lb[s]
         else:
             return v
 
@@ -118,5 +119,5 @@ cdef class Firefly(Algorithm):
 
     cdef inline void generation_process(self) nogil:
         self.move_fireflies()
-        self.evaluate()
+        self.get_fitness()
         self.find_firefly()

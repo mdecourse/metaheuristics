@@ -68,7 +68,7 @@ cdef class Genetic(Algorithm):
         self.set_best(0)
         self.get_fitness()
 
-    cdef inline void cross_over(self) nogil:
+    cdef inline void crossover(self) nogil:
         cdef uint i, s
         cdef double c1_f, c2_f, c3_f
         for i in range(0, self.pop_num - 1, 2):
@@ -152,6 +152,6 @@ cdef class Genetic(Algorithm):
 
     cdef inline void generation_process(self) nogil:
         self.select()
-        self.cross_over()
+        self.crossover()
         self.mutate()
         self.get_fitness()

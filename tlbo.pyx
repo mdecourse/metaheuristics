@@ -56,52 +56,52 @@ cdef class TeachingLearning(Algorithm):
             self.fitness[i] = s[i, end - 1]
         self.set_best(self.pop_num - 1)
 
-    cdef inline void teaching(self, uint index) nogil:
+    cdef inline void teaching(self, uint i) nogil:
         """Teaching phase. The last best is the teacher."""
         cdef double tf = round(1 + rand_v())
-        cdef uint i, j
+        cdef uint s, j
         cdef double mean
-        for i in range(self.dim):
+        for s in range(self.dim):
             mean = 0
             for j in range(self.pop_num):
-                mean += self.pool[j, i]
+                mean += self.pool[j, s]
             mean /= self.dim
-            self.tmp[i] = self.pool[index, i] + rand_v(1, self.dim) * (
-                self.best[i] - tf * mean)
-            if self.tmp[i] < self.func.lb[i]:
-                self.tmp[i] = self.func.lb[i]
-            elif self.tmp[i] > self.func.ub[i]:
-                self.tmp[i] = self.func.ub[i]
-        cdef double f_new = self.func.fitness(self.tmp)
-        if f_new < self.fitness[index]:
-            self.pool[index, :] = self.tmp
-            self.fitness[index] = f_new
-        if self.fitness[index] < self.best_f:
-            self.set_best(index)
-
-    cdef inline void learning(self, uint index) nogil:
-        """Learning phase."""
-        cdef uint cmp_index = rand_i(self.pop_num - 1)
-        if cmp_index >= index:
-            cmp_index += 1
-        cdef uint s
-        cdef double diff
-        for s in range(self.dim):
-            if self.fitness[cmp_index] < self.fitness[index]:
-                diff = self.pool[index, s] - self.pool[cmp_index, s]
-            else:
-                diff = self.pool[cmp_index, s] - self.pool[index, s]
-            self.tmp[s] = self.pool[index, s] + diff * rand_v(1, self.dim)
+            self.tmp[s] = self.pool[i, s] + rand_v(1, self.dim) * (
+                self.best[s] - tf * mean)
             if self.tmp[s] < self.func.lb[s]:
                 self.tmp[s] = self.func.lb[s]
             elif self.tmp[s] > self.func.ub[s]:
                 self.tmp[s] = self.func.ub[s]
         cdef double f_new = self.func.fitness(self.tmp)
-        if f_new < self.fitness[index]:
-            self.pool[index, :] = self.tmp
-            self.fitness[index] = f_new
-        if self.fitness[index] < self.best_f:
-            self.set_best(index)
+        if f_new < self.fitness[i]:
+            self.pool[i, :] = self.tmp
+            self.fitness[i] = f_new
+        if self.fitness[i] < self.best_f:
+            self.set_best(i)
+
+    cdef inline void learning(self, uint i) nogil:
+        """Learning phase."""
+        cdef uint j = rand_i(self.pop_num - 1)
+        if j >= i:
+            j += 1
+        cdef uint s
+        cdef double diff
+        for s in range(self.dim):
+            if self.fitness[j] < self.fitness[i]:
+                diff = self.pool[i, s] - self.pool[j, s]
+            else:
+                diff = self.pool[j, s] - self.pool[i, s]
+            self.tmp[s] = self.pool[i, s] + diff * rand_v(1, self.dim)
+            if self.tmp[s] < self.func.lb[s]:
+                self.tmp[s] = self.func.lb[s]
+            elif self.tmp[s] > self.func.ub[s]:
+                self.tmp[s] = self.func.ub[s]
+        cdef double f_new = self.func.fitness(self.tmp)
+        if f_new < self.fitness[i]:
+            self.pool[i, :] = self.tmp
+            self.fitness[i] = f_new
+        if self.fitness[i] < self.best_f:
+            self.set_best(i)
 
     cdef inline void generation_process(self) nogil:
         """The process of each generation."""
