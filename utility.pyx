@@ -120,15 +120,6 @@ cdef class Algorithm:
         self.best_f = f
         self.best[:] = v
 
-    cdef uint find_best(self) nogil:
-        """Find the best."""
-        cdef uint best = 0
-        cdef uint i
-        for i in range(1, self.pop_num):
-            if self.fitness[i] < self.fitness[best]:
-                best = i
-        return best
-
     cdef void initialize(self):
         """Initialize function."""
         raise NotImplementedError

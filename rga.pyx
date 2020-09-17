@@ -113,9 +113,8 @@ cdef class Genetic(Algorithm):
         cdef uint i
         for i in range(self.pop_num):
             self.fitness[i] = self.func.fitness(self.pool[i, :])
-        cdef uint best = self.find_best()
-        if self.fitness[best] < self.best_f:
-            self.set_best(best)
+            if self.fitness[i] < self.best_f:
+                self.set_best(i)
 
     cdef inline void mutate(self) nogil:
         cdef uint i, s

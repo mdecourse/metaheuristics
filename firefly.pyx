@@ -74,6 +74,8 @@ cdef class Firefly(Algorithm):
     cdef inline void get_fitness(self) nogil:
         for i in range(self.pop_num):
             self.fitness[i] = self.func.fitness(self.pool[i, :])
+            if self.fitness[i] < self.best_f:
+                self.set_best(i)
 
     cdef inline void move_fireflies(self) nogil:
         cdef bint is_move
@@ -112,12 +114,6 @@ cdef class Firefly(Algorithm):
         else:
             return v
 
-    cdef inline void find_firefly(self) nogil:
-        cdef uint best = self.find_best()
-        if self.fitness[best] < self.best_f:
-            self.set_best(best)
-
     cdef inline void generation_process(self) nogil:
         self.move_fireflies()
         self.get_fitness()
-        self.find_firefly()

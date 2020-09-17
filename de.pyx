@@ -82,7 +82,8 @@ cdef class Differential(Algorithm):
             for j in range(self.dim):
                 self.pool[i, j] = rand_v(self.func.lb[j], self.func.ub[j])
             self.fitness[i] = self.func.fitness(self.pool[i, :])
-        self.set_best(self.find_best())
+            if self.fitness[i] < self.best_f:
+                self.set_best(i)
 
     cdef inline void generate_random_vector(self, uint i) nogil:
         """Generate new vectors."""
