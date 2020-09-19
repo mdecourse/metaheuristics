@@ -10,6 +10,7 @@ email: pyslvs@gmail.com
 """
 
 cimport cython
+from cython.parallel cimport prange
 from libc.math cimport pow
 from numpy import zeros, float64 as np_float
 from .utility cimport MAX_GEN, rand_v, rand_i, ObjFunc, Algorithm
@@ -65,7 +66,7 @@ cdef class Genetic(Algorithm):
             for j in range(self.dim):
                 self.pool[i, j] = rand_v(self.func.lb[j], self.func.ub[j])
         self.fitness[0] = self.func.fitness(self.pool[0, :])
-        self.set_best(0)
+        self.set_best_force(0)
         self.get_fitness()
 
     cdef inline void crossover(self) nogil:
@@ -109,16 +110,9 @@ cdef class Genetic(Algorithm):
             r = 1
         return y * rand_v() * pow(1.0 - r, self.delta)
 
-    cdef inline void get_fitness(self) nogil:
-        cdef uint i
-        for i in range(self.pop_num):
-            self.fitness[i] = self.func.fitness(self.pool[i, :])
-            if self.fitness[i] < self.best_f:
-                self.set_best(i)
-
     cdef inline void mutate(self) nogil:
         cdef uint i, s
-        for i in range(self.pop_num):
+        for i in prange(self.pop_num):
             if not rand_v() < self.mute:
                 continue
             s = rand_i(self.dim)
@@ -128,6 +122,9 @@ cdef class Genetic(Algorithm):
             else:
                 self.pool[i, s] -= self.get_delta(self.pool[i, s]
                                                   - self.func.lb[s])
+            # Get fitness
+            self.fitness[i] = self.func.fitness(self.pool[i, :])
+            self.set_best(i)
 
     cdef inline void select(self) nogil:
         """roulette wheel selection"""
@@ -153,4 +150,3 @@ cdef class Genetic(Algorithm):
         self.select()
         self.crossover()
         self.mutate()
-        self.get_fitness()

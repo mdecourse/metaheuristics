@@ -69,13 +69,12 @@ cdef class Firefly(Algorithm):
             for s in range(self.dim):
                 self.pool[i, s] = rand_v(self.func.lb[s], self.func.ub[s])
         self.get_fitness()
-        self.set_best(0)
+        self.set_best_force(0)
 
     cdef inline void get_fitness(self) nogil:
         for i in range(self.pop_num):
             self.fitness[i] = self.func.fitness(self.pool[i, :])
-            if self.fitness[i] < self.best_f:
-                self.set_best(i)
+            self.set_best(i)
 
     cdef inline void move_fireflies(self) nogil:
         cdef bint is_move

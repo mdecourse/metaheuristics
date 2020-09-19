@@ -54,7 +54,7 @@ cdef class TeachingLearning(Algorithm):
             tmp = s[i, :end - 1]
             self.pool[i, :] = tmp
             self.fitness[i] = s[i, end - 1]
-        self.set_best(self.pop_num - 1)
+        self.set_best_force(self.pop_num - 1)
 
     cdef inline void teaching(self, uint i) nogil:
         """Teaching phase. The last best is the teacher."""
@@ -76,8 +76,7 @@ cdef class TeachingLearning(Algorithm):
         if f_new < self.fitness[i]:
             self.pool[i, :] = self.tmp
             self.fitness[i] = f_new
-        if self.fitness[i] < self.best_f:
-            self.set_best(i)
+        self.set_best(i)
 
     cdef inline void learning(self, uint i) nogil:
         """Learning phase."""
@@ -100,8 +99,7 @@ cdef class TeachingLearning(Algorithm):
         if f_new < self.fitness[i]:
             self.pool[i, :] = self.tmp
             self.fitness[i] = f_new
-        if self.fitness[i] < self.best_f:
-            self.set_best(i)
+        self.set_best(i)
 
     cdef inline void generation_process(self) nogil:
         """The process of each generation."""

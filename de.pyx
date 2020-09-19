@@ -10,6 +10,7 @@ email: pyslvs@gmail.com
 """
 
 cimport cython
+from cython.parallel cimport prange
 from .utility cimport rand_v, rand_i, ObjFunc, Algorithm
 
 ctypedef unsigned int uint
@@ -82,8 +83,7 @@ cdef class Differential(Algorithm):
             for j in range(self.dim):
                 self.pool[i, j] = rand_v(self.func.lb[j], self.func.ub[j])
             self.fitness[i] = self.func.fitness(self.pool[i, :])
-            if self.fitness[i] < self.best_f:
-                self.set_best(i)
+            self.set_best(i)
 
     cdef inline void generate_random_vector(self, uint i) nogil:
         """Generate new vectors."""
@@ -180,7 +180,7 @@ cdef class Differential(Algorithm):
     cdef inline void generation_process(self) nogil:
         cdef uint i
         cdef double tmp_f
-        for i in range(self.pop_num):
+        for i in prange(self.pop_num):
             # Generate a new vector
             self.generate_random_vector(i)
             # Use the vector recombine the member to temporary

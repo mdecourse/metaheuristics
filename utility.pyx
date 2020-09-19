@@ -13,7 +13,7 @@ email: pyslvs@gmail.com
 from numpy import zeros, float64 as np_float
 from libc.stdlib cimport rand, srand, RAND_MAX
 from libc.time cimport time, difftime
-from cython.parallel cimport prange
+from openmp cimport omp_init_lock, omp_destroy_lock, omp_set_lock, omp_unset_lock
 
 
 cdef inline double rand_v(double lower = 0., double upper = 1.) nogil:
@@ -56,6 +56,7 @@ cdef class Algorithm:
     ):
         """Generic settings."""
         srand(time(NULL))
+        omp_init_lock(&self.mutex)
         # object function
         self.func = func
         self.stop_at_i = 0
@@ -91,6 +92,10 @@ cdef class Algorithm:
         # Temporary zone
         self.tmp = self.make_tmp()
 
+    def __dealloc__(self):
+        """Remove mutex lock."""
+        omp_destroy_lock(&self.mutex)
+
     cdef void new_pop(self):
         """New population."""
         self.fitness = zeros(self.pop_num, dtype=np_float)
@@ -111,9 +116,19 @@ cdef class Algorithm:
         self.pool[i, :] = v
 
     cdef void set_best(self, uint i) nogil:
+        """Set as best with comparison."""
+        omp_set_lock(&self.mutex)
+        if self.fitness[i] < self.best_f:
+            self.best_f = self.fitness[i]
+            self.best[:] = self.pool[i, :]
+        omp_unset_lock(&self.mutex)
+
+    cdef void set_best_force(self, uint i) nogil:
         """Set as best."""
+        omp_set_lock(&self.mutex)
         self.best_f = self.fitness[i]
         self.best[:] = self.pool[i, :]
+        omp_unset_lock(&self.mutex)
 
     cdef void set_best_from(self, double f, double[:] v) nogil:
         """Set best from tmp."""
