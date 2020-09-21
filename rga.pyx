@@ -21,7 +21,7 @@ ctypedef unsigned int uint
 @cython.final
 cdef class Genetic(Algorithm):
     """The implementation of Real-coded Genetic Algorithm."""
-    cdef double cross, mute, win, delta
+    cdef double cross, mutate_f, win, delta
     cdef double[:] new_fitness, tmp2, tmp3
     cdef double[:, :] new_pool
 
@@ -36,7 +36,7 @@ cdef class Genetic(Algorithm):
         settings = {
             'pop_num': int,
             'cross': float,
-            'mute': float,
+            'mutate': float,
             'win': float,
             'delta': float,
             'max_gen': int or 'min_fit': float or 'max_time': float,
@@ -45,7 +45,7 @@ cdef class Genetic(Algorithm):
         """
         self.pop_num = settings.get('pop_num', 500)
         self.cross = settings.get('cross', 0.95)
-        self.mute = settings.get('mute', 0.05)
+        self.mutate_f = settings.get('mutate', 0.05)
         self.win = settings.get('win', 0.95)
         self.delta = settings.get('delta', 5.)
         self.new_pop()
@@ -112,7 +112,7 @@ cdef class Genetic(Algorithm):
     cdef inline void mutate(self) nogil:
         cdef uint i, s
         for i in prange(self.pop_num, num_threads=4, nogil=True):
-            if not rand_v() < self.mute:
+            if not rand_v() < self.mutate_f:
                 continue
             s = rand_i(self.dim)
             if rand_v() < 0.5:

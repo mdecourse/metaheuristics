@@ -33,11 +33,11 @@ ALGORITHM: Mapping[AlgorithmType, Type[Algorithm]] = {
 }
 PARAMS: Mapping[AlgorithmType, Mapping[str, Union[int, float]]] = {
     AlgorithmType.RGA: {
-        'nPop': 500,
-        'pCross': 0.95,
-        'pMute': 0.05,
-        'pWin': 0.95,
-        'bDelta': 5.,
+        'pop_num': 500,
+        'cross': 0.95,
+        'mutate': 0.05,
+        'win': 0.95,
+        'delta': 5.,
     },
     AlgorithmType.Firefly: {
         'n': 80,
