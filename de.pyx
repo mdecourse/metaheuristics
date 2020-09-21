@@ -180,7 +180,7 @@ cdef class Differential(Algorithm):
     cdef inline void generation_process(self) nogil:
         cdef uint i
         cdef double tmp_f
-        for i in prange(self.pop_num):
+        for i in range(self.pop_num):
             # Generate a new vector
             self.generate_random_vector(i)
             # Use the vector recombine the member to temporary

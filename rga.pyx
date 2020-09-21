@@ -113,7 +113,7 @@ cdef class Genetic(Algorithm):
 
     cdef inline void mutate(self) nogil:
         cdef uint i, s
-        for i in prange(self.pop_num):
+        for i in range(self.pop_num):
             if not rand_v() < self.mute:
                 continue
             s = rand_i(self.dim)
