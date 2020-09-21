@@ -10,6 +10,7 @@ email: pyslvs@gmail.com
 """
 
 cimport cython
+from cython.parallel cimport prange
 from libc.math cimport exp, sqrt
 from .utility cimport rand_v, ObjFunc, Algorithm
 
@@ -63,16 +64,17 @@ cdef class Firefly(Algorithm):
         # all fireflies, depended on population n
         self.new_pop()
 
-    cdef inline void initialize(self):
+    cdef inline void initialize(self) nogil:
         cdef uint i, s
-        for i in range(self.pop_num):
+        for i in prange(self.pop_num, num_threads=4, nogil=True):
             for s in range(self.dim):
                 self.pool[i, s] = rand_v(self.func.lb[s], self.func.ub[s])
         self.get_fitness()
         self.set_best_force(0)
 
     cdef inline void get_fitness(self) nogil:
-        for i in range(self.pop_num):
+        cdef uint i
+        for i in prange(self.pop_num, num_threads=4, nogil=True):
             self.fitness[i] = self.func.fitness(self.pool[i, :])
             self.set_best(i)
 

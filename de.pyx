@@ -76,12 +76,12 @@ cdef class Differential(Algorithm):
         # generation pool
         self.new_pop()
 
-    cdef inline void initialize(self):
+    cdef inline void initialize(self) nogil:
         """Initial population."""
-        cdef uint i, j
-        for i in range(self.pop_num):
-            for j in range(self.dim):
-                self.pool[i, j] = rand_v(self.func.lb[j], self.func.ub[j])
+        cdef uint i, s
+        for i in prange(self.pop_num, num_threads=4, nogil=True):
+            for s in range(self.dim):
+                self.pool[i, s] = rand_v(self.func.lb[s], self.func.ub[s])
             self.fitness[i] = self.func.fitness(self.pool[i, :])
             self.set_best(i)
 
@@ -180,7 +180,7 @@ cdef class Differential(Algorithm):
     cdef inline void generation_process(self) nogil:
         cdef uint i
         cdef double tmp_f
-        for i in range(self.pop_num):
+        for i in prange(self.pop_num, num_threads=4, nogil=True):
             # Generate a new vector
             self.generate_random_vector(i)
             # Use the vector recombine the member to temporary

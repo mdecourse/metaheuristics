@@ -135,9 +135,10 @@ cdef class Algorithm:
         self.best_f = f
         self.best[:] = v
 
-    cdef void initialize(self):
+    cdef void initialize(self) nogil:
         """Initialize function."""
-        raise NotImplementedError
+        with gil:
+            raise NotImplementedError
 
     cdef void generation_process(self) nogil:
         """The process of each generation."""

@@ -60,15 +60,13 @@ cdef class Genetic(Algorithm):
             return rand_v(self.func.lb[i], self.func.ub[i])
         return v
 
-    cdef inline void initialize(self):
-        cdef uint i, j
-        for i in range(self.pop_num):
-            for j in range(self.dim):
-                self.pool[i, j] = rand_v(self.func.lb[j], self.func.ub[j])
-        self.fitness[0] = self.func.fitness(self.pool[0, :])
-        self.set_best_force(0)
-        for i in range(self.pop_num):
+    cdef inline void initialize(self) nogil:
+        cdef uint i, s
+        for i in prange(self.pop_num, num_threads=4, nogil=True):
+            for s in range(self.dim):
+                self.pool[i, s] = rand_v(self.func.lb[s], self.func.ub[s])
             self.fitness[i] = self.func.fitness(self.pool[i, :])
+        self.set_best_force(0)
 
     cdef inline void crossover(self) nogil:
         cdef uint i, s
@@ -113,7 +111,7 @@ cdef class Genetic(Algorithm):
 
     cdef inline void mutate(self) nogil:
         cdef uint i, s
-        for i in range(self.pop_num):
+        for i in prange(self.pop_num, num_threads=4, nogil=True):
             if not rand_v() < self.mute:
                 continue
             s = rand_i(self.dim)

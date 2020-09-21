@@ -61,7 +61,7 @@ cdef class Algorithm:
     cdef void set_best_force(self, uint i) nogil
     cdef void set_best_from(self, double f, double[:] v) nogil
 
-    cdef void initialize(self)
+    cdef void initialize(self) nogil
     cdef void generation_process(self) nogil
     cdef void report(self) nogil
     cpdef list history(self)

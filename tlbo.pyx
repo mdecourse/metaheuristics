@@ -10,8 +10,7 @@ email: pyslvs@gmail.com
 """
 
 cimport cython
-from numpy cimport ndarray
-from numpy import zeros, float64 as np_float
+from cython.parallel cimport prange
 from libc.math cimport round
 from .utility cimport rand_v, rand_i, ObjFunc, Algorithm
 
@@ -39,22 +38,14 @@ cdef class TeachingLearning(Algorithm):
         self.pop_num = settings.get('class_size', 50)
         self.new_pop()
 
-    cdef inline void initialize(self):
+    cdef inline void initialize(self) nogil:
         """Initial population: Sorted students."""
-        cdef uint end = self.dim + 1
-        cdef ndarray[double, ndim=2] s = zeros((self.pop_num, end), dtype=np_float)
-        cdef uint i, j
-        for i in range(self.pop_num):
-            for j in range(self.dim):
-                s[i, j] = rand_v(self.func.lb[j], self.func.ub[j])
-            s[i, end - 1] = self.func.fitness(s[i, :end - 1])
-        s = s[s[:, end - 1].argsort()][::-1]
-        cdef double[:] tmp
-        for i in range(self.pop_num):
-            tmp = s[i, :end - 1]
-            self.pool[i, :] = tmp
-            self.fitness[i] = s[i, end - 1]
-        self.set_best_force(self.pop_num - 1)
+        cdef uint i, j, s
+        for i in prange(self.pop_num, num_threads=4, nogil=True):
+            for s in range(self.dim):
+                self.pool[i, s] = rand_v(self.func.lb[s], self.func.ub[s])
+            self.fitness[i] = self.func.fitness(self.pool[i, :])
+            self.set_best(i)
 
     cdef inline void teaching(self, uint i) nogil:
         """Teaching phase. The last best is the teacher."""
