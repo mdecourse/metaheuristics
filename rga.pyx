@@ -67,7 +67,8 @@ cdef class Genetic(Algorithm):
                 self.pool[i, j] = rand_v(self.func.lb[j], self.func.ub[j])
         self.fitness[0] = self.func.fitness(self.pool[0, :])
         self.set_best_force(0)
-        self.get_fitness()
+        for i in range(self.pop_num):
+            self.fitness[i] = self.func.fitness(self.pool[i, :])
 
     cdef inline void crossover(self) nogil:
         cdef uint i, s
@@ -140,9 +141,8 @@ cdef class Genetic(Algorithm):
                 self.new_pool[i, :] = self.pool[j, :]
         # in this stage, new_chromosome is select finish
         # now replace origin chromosome
-        for i in range(self.pop_num):
-            self.fitness[:] = self.new_fitness
-            self.pool[:] = self.new_pool
+        self.fitness[:] = self.new_fitness
+        self.pool[:] = self.new_pool
         # select random one chromosome to be best chromosome, make best chromosome still exist
         self.assign_from(rand_i(self.pop_num), self.best_f, self.best)
 
