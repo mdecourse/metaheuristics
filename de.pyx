@@ -11,6 +11,7 @@ email: pyslvs@gmail.com
 
 cimport cython
 from cython.parallel cimport prange
+from openmp cimport omp_set_lock, omp_unset_lock
 from .utility cimport rand_v, rand_i, ObjFunc, Algorithm
 
 ctypedef unsigned int uint
@@ -124,21 +125,27 @@ cdef class Differential(Algorithm):
             n = (n + 1) % self.dim
 
     cdef void eq1(self, uint n) nogil:
+        omp_set_lock(&self.mutex)
         self.tmp[n] = self.best[n] + self.F * (
             self.pool[self.r1, n] - self.pool[self.r2, n])
+        omp_unset_lock(&self.mutex)
 
     cdef void eq2(self, uint n) nogil:
         self.tmp[n] = self.pool[self.r1, n] + self.F * (
             self.pool[self.r2, n] - self.pool[self.r3, n])
 
     cdef void eq3(self, uint n) nogil:
+        omp_set_lock(&self.mutex)
         self.tmp[n] = (self.tmp[n] + self.F * (self.best[n] - self.tmp[n])
                        + self.F * (self.pool[self.r1, n] - self.pool[self.r2, n]))
+        omp_unset_lock(&self.mutex)
 
     cdef void eq4(self, uint n) nogil:
+        omp_set_lock(&self.mutex)
         self.tmp[n] = self.best[n] + self.F * (
             self.pool[self.r1, n] + self.pool[self.r2, n]
             - self.pool[self.r3, n] - self.pool[self.r4, n])
+        omp_unset_lock(&self.mutex)
 
     cdef void eq5(self, uint n) nogil:
         self.tmp[n] = self.pool[self.r5, n] + self.F * (
@@ -188,13 +195,10 @@ cdef class Differential(Algorithm):
             # Check the one is out of bound
             if self.over_bound(self.tmp):
                 continue
+            # Test
             tmp_f = self.func.fitness(self.tmp)
-            # Check if temporary one is better than original one
+            # Self evolution
             if tmp_f > self.fitness[i]:
                 continue
-            # copy the temporary one to origin member
             self.assign_from(i, tmp_f, self.tmp)
-            # check the temporary one is better than the current_best
-            if tmp_f < self.best_f:
-                # copy the temporary one to current_best
-                self.set_best_from(tmp_f, self.tmp)
+            self.set_best_from(tmp_f, self.tmp)

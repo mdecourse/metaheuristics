@@ -133,8 +133,9 @@ cdef class Algorithm:
     cdef void set_best_from(self, double f, double[:] v) nogil:
         """Set best from tmp."""
         omp_set_lock(&self.mutex)
-        self.best_f = f
-        self.best[:] = v
+        if f < self.best_f:
+            self.best_f = f
+            self.best[:] = v
         omp_unset_lock(&self.mutex)
 
     cdef void initialize(self) nogil:
