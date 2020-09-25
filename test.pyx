@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # cython: language_level=3, cdivision=True, boundscheck=False, wraparound=False
+# cython: initializedcheck=False
 
 """Test objective function for algorithms.
 

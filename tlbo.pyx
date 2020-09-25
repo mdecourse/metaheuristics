@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # cython: language_level=3, cdivision=True, boundscheck=False, wraparound=False
+# cython: initializedcheck=False
 
 """Teaching Learning Based Optimization
 
@@ -20,6 +21,7 @@ ctypedef unsigned int uint
 @cython.final
 cdef class TeachingLearning(Algorithm):
     """The implementation of Teaching Learning Based Optimization."""
+    cdef double[:] tmp
 
     def __cinit__(
         self,
@@ -37,6 +39,7 @@ cdef class TeachingLearning(Algorithm):
         """
         self.pop_num = settings.get('class_size', 50)
         self.new_pop()
+        self.tmp = self.make_tmp()
 
     cdef inline void initialize(self) nogil:
         """Initial population: Sorted students."""

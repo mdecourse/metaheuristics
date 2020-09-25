@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # cython: language_level=3, cdivision=True, boundscheck=False, wraparound=False
+# cython: initializedcheck=False
 
 """Real-coded Genetic Algorithm
 
@@ -22,7 +23,7 @@ ctypedef unsigned int uint
 cdef class Genetic(Algorithm):
     """The implementation of Real-coded Genetic Algorithm."""
     cdef double cross, mutate_f, win, delta
-    cdef double[:] new_fitness, tmp2, tmp3
+    cdef double[:] new_fitness, tmp, tmp2, tmp3
     cdef double[:, :] new_pool
 
     def __cinit__(
@@ -51,6 +52,7 @@ cdef class Genetic(Algorithm):
         self.new_pop()
         self.new_fitness = zeros(self.pop_num, dtype=np_float)
         self.new_pool = zeros((self.pop_num, self.dim), dtype=np_float)
+        self.tmp = self.make_tmp()
         self.tmp2 = self.make_tmp()
         self.tmp3 = self.make_tmp()
 

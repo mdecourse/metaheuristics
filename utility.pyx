@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# cython: language_level=3, cdivision=True
+# cython: language_level=3, cdivision=True, boundscheck=False, wraparound=False
+# cython: initializedcheck=False
 
 """The callable class of the validation in algorithm.
 The 'utility' module should be loaded when using sub-class of base classes.
@@ -89,8 +90,6 @@ cdef class Algorithm:
         self.func.gen = 0
         self.time_start = 0
         self.fitness_time = []
-        # Temporary zone
-        self.tmp = self.make_tmp()
 
     def __dealloc__(self):
         """Remove mutex lock."""

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # cython: language_level=3, cdivision=True, boundscheck=False, wraparound=False
+# cython: initializedcheck=False
 
 """Differential Evolution
 
@@ -37,6 +38,7 @@ cdef class Differential(Algorithm):
     cdef Strategy strategy
     cdef uint r1, r2, r3, r4, r5
     cdef double F, CR
+    cdef double[:] tmp
 
     def __cinit__(
         self,
@@ -76,6 +78,7 @@ cdef class Differential(Algorithm):
         self.r1 = self.r2 = self.r3 = self.r4 = self.r5 = 0
         # generation pool
         self.new_pop()
+        self.tmp = self.make_tmp()
 
     cdef inline void initialize(self) nogil:
         """Initial population."""

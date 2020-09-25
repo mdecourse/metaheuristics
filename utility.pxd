@@ -44,7 +44,7 @@ cdef class Algorithm:
     cdef uint pop_num, dim, stop_at_i, rpt
     cdef Task stop_at
     cdef double stop_at_f, best_f
-    cdef double[:] best, fitness, tmp
+    cdef double[:] best, fitness
     cdef double[:, :] pool
     cdef time_t time_start
     cdef omp_lock_t mutex
