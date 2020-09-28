@@ -12,7 +12,6 @@ email: pyslvs@gmail.com
 
 cimport cython
 from cython.parallel cimport prange
-from openmp cimport omp_set_lock, omp_unset_lock
 from .utility cimport rand_v, rand_i, ObjFunc, Algorithm
 
 ctypedef unsigned int uint
@@ -134,27 +133,21 @@ cdef class Differential(Algorithm):
             n = (n + 1) % self.dim
 
     cdef void eq1(self, uint n) nogil:
-        omp_set_lock(&self.mutex)
         self.tmp[n] = self.best[n] + self.F * (
             self.pool[self.r1, n] - self.pool[self.r2, n])
-        omp_unset_lock(&self.mutex)
 
     cdef void eq2(self, uint n) nogil:
         self.tmp[n] = self.pool[self.r1, n] + self.F * (
             self.pool[self.r2, n] - self.pool[self.r3, n])
 
     cdef void eq3(self, uint n) nogil:
-        omp_set_lock(&self.mutex)
         self.tmp[n] = (self.tmp[n] + self.F * (self.best[n] - self.tmp[n])
                        + self.F * (self.pool[self.r1, n] - self.pool[self.r2, n]))
-        omp_unset_lock(&self.mutex)
 
     cdef void eq4(self, uint n) nogil:
-        omp_set_lock(&self.mutex)
         self.tmp[n] = self.best[n] + self.F * (
             self.pool[self.r1, n] + self.pool[self.r2, n]
             - self.pool[self.r3, n] - self.pool[self.r4, n])
-        omp_unset_lock(&self.mutex)
 
     cdef void eq5(self, uint n) nogil:
         self.tmp[n] = self.pool[self.r5, n] + self.F * (

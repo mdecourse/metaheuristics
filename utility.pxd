@@ -12,7 +12,6 @@ email: pyslvs@gmail.com
 
 from libc.time cimport time_t
 from libcpp.list cimport list as clist
-from openmp cimport omp_lock_t
 
 ctypedef unsigned int uint
 
@@ -48,7 +47,6 @@ cdef class Algorithm:
     cdef double[:] best, fitness
     cdef double[:, :] pool
     cdef time_t time_start
-    cdef omp_lock_t mutex
     cdef clist[Report] fitness_time
     cdef object progress_fun, interrupt_fun
     cdef public ObjFunc func

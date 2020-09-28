@@ -11,11 +11,9 @@ license: AGPL
 email: pyslvs@gmail.com
 """
 
-cimport cython
 from numpy import zeros, float64 as np_float
 from libc.stdlib cimport rand, srand, RAND_MAX
 from libc.time cimport time, difftime
-from openmp cimport omp_init_lock, omp_destroy_lock, omp_set_lock, omp_unset_lock
 
 
 cdef inline double rand_v(double lower = 0., double upper = 1.) nogil:
@@ -58,7 +56,6 @@ cdef class Algorithm:
     ):
         """Generic settings."""
         srand(time(NULL))
-        omp_init_lock(&self.mutex)
         # object function
         self.func = func
         self.stop_at_i = 0
@@ -92,10 +89,6 @@ cdef class Algorithm:
         self.func.gen = 0
         self.time_start = 0
         self.fitness_time = []
-
-    def __dealloc__(self):
-        """Remove mutex lock."""
-        omp_destroy_lock(&self.mutex)
 
     cdef void new_pop(self):
         """New population."""
