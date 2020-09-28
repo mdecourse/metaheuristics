@@ -59,8 +59,7 @@ cdef class Algorithm:
     cdef void assign(self, uint i, uint j) nogil
     cdef void assign_from(self, uint i, double f, double[:] v) nogil
     cdef void set_best(self, uint i) nogil
-    cdef void set_best_force(self, uint i) nogil
-    cdef void set_best_from(self, double f, double[:] v) nogil
+    cdef void find_best(self) nogil
 
     cdef void initialize(self) nogil
     cdef void generation_process(self) nogil

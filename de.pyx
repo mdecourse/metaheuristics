@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # cython: language_level=3, cdivision=True, boundscheck=False, wraparound=False
-# cython: initializedcheck=False
+# cython: initializedcheck=False, nonecheck=False
 
 """Differential Evolution
 
@@ -42,8 +42,8 @@ cdef class Differential(Algorithm):
 
     def __cinit__(
         self,
-        ObjFunc func,
-        dict settings,
+        ObjFunc func not None,
+        dict settings not None,
         object progress_fun=None,
         object interrupt_fun=None
     ):
@@ -88,13 +88,12 @@ cdef class Differential(Algorithm):
                 for s in range(self.dim):
                     self.pool[i, s] = rand_v(self.func.lb[s], self.func.ub[s])
                 self.fitness[i] = self.func.fitness(self.pool[i, :])
-                self.set_best(i)
         else:
             for i in range(self.pop_num):
                 for s in range(self.dim):
                     self.pool[i, s] = rand_v(self.func.lb[s], self.func.ub[s])
                 self.fitness[i] = self.func.fitness(self.pool[i, :])
-                self.set_best(i)
+        self.find_best()
 
     cdef inline void generate_random_vector(self, uint i) nogil:
         """Generate new vectors."""
@@ -212,4 +211,4 @@ cdef class Differential(Algorithm):
             if tmp_f > self.fitness[i]:
                 continue
             self.assign_from(i, tmp_f, self.tmp)
-            self.set_best_from(tmp_f, self.tmp)
+        self.find_best()

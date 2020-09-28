@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # cython: language_level=3, cdivision=True, boundscheck=False, wraparound=False
-# cython: initializedcheck=False
+# cython: initializedcheck=False, nonecheck=False
 
 """Firefly Algorithm
 
@@ -36,8 +36,8 @@ cdef class Firefly(Algorithm):
 
     def __cinit__(
         self,
-        ObjFunc func,
-        dict settings,
+        ObjFunc func not None,
+        dict settings not None,
         object progress_fun=None,
         object interrupt_fun=None
     ):
@@ -66,30 +66,33 @@ cdef class Firefly(Algorithm):
         self.new_pop()
 
     cdef inline void initialize(self) nogil:
+        """Initial population."""
         cdef uint i, s
         if self.parallel:
             for i in prange(self.pop_num, nogil=True):
                 for s in range(self.dim):
                     self.pool[i, s] = rand_v(self.func.lb[s], self.func.ub[s])
+                self.fitness[i] = self.func.fitness(self.pool[i, :])
         else:
             for i in range(self.pop_num):
                 for s in range(self.dim):
                     self.pool[i, s] = rand_v(self.func.lb[s], self.func.ub[s])
-        self.get_fitness()
-        self.set_best_force(0)
+                self.fitness[i] = self.func.fitness(self.pool[i, :])
+        self.set_best(0)
 
     cdef inline void get_fitness(self) nogil:
+        """Get fitness."""
         cdef uint i
         if self.parallel:
             for i in prange(self.pop_num, nogil=True):
                 self.fitness[i] = self.func.fitness(self.pool[i, :])
-                self.set_best(i)
         else:
             for i in range(self.pop_num):
                 self.fitness[i] = self.func.fitness(self.pool[i, :])
-                self.set_best(i)
+        self.find_best()
 
     cdef inline void move_fireflies(self) nogil:
+        """Move fireflies."""
         cdef bint is_move
         cdef uint i, j, s
         cdef double scale, tmp_v
@@ -108,6 +111,7 @@ cdef class Firefly(Algorithm):
                     self.func.ub[s] - self.func.lb[s]) * rand_v(-0.5, 0.5))
 
     cdef inline void move_firefly(self, double[:] me, double[:] she) nogil:
+        """Move single firefly."""
         cdef double r = _distance(me, she, self.dim)
         cdef double beta = ((self.beta0 - self.beta_min)
                             * exp(-self.gamma * r * r) + self.beta_min)

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # cython: language_level=3, cdivision=True, boundscheck=False, wraparound=False
-# cython: initializedcheck=False
+# cython: initializedcheck=False, nonecheck=False
 
 """Teaching Learning Based Optimization
 
@@ -25,8 +25,8 @@ cdef class TeachingLearning(Algorithm):
 
     def __cinit__(
         self,
-        ObjFunc func,
-        dict settings,
+        ObjFunc func not None,
+        dict settings not None,
         object progress_fun=None,
         object interrupt_fun=None
     ):
@@ -43,19 +43,18 @@ cdef class TeachingLearning(Algorithm):
 
     cdef inline void initialize(self) nogil:
         """Initial population: Sorted students."""
-        cdef uint i, j, s
+        cdef uint i, s
         if self.parallel:
             for i in prange(self.pop_num, nogil=True):
                 for s in range(self.dim):
                     self.pool[i, s] = rand_v(self.func.lb[s], self.func.ub[s])
                 self.fitness[i] = self.func.fitness(self.pool[i, :])
-                self.set_best(i)
         else:
             for i in range(self.pop_num):
                 for s in range(self.dim):
                     self.pool[i, s] = rand_v(self.func.lb[s], self.func.ub[s])
                 self.fitness[i] = self.func.fitness(self.pool[i, :])
-                self.set_best(i)
+        self.find_best()
 
     cdef inline void teaching(self, uint i) nogil:
         """Teaching phase. The last best is the teacher."""
@@ -77,7 +76,8 @@ cdef class TeachingLearning(Algorithm):
         if f_new < self.fitness[i]:
             self.pool[i, :] = self.tmp
             self.fitness[i] = f_new
-        self.set_best(i)
+        if self.fitness[i] < self.best_f:
+            self.set_best(i)
 
     cdef inline void learning(self, uint i) nogil:
         """Learning phase."""
@@ -100,7 +100,8 @@ cdef class TeachingLearning(Algorithm):
         if f_new < self.fitness[i]:
             self.pool[i, :] = self.tmp
             self.fitness[i] = f_new
-        self.set_best(i)
+        if self.fitness[i] < self.best_f:
+            self.set_best(i)
 
     cdef inline void generation_process(self) nogil:
         """The process of each generation."""

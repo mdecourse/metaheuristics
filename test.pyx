@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # cython: language_level=3, cdivision=True, boundscheck=False, wraparound=False
-# cython: initializedcheck=False
+# cython: initializedcheck=False, nonecheck=False
 
 """Test objective function for algorithms.
 
@@ -38,39 +38,35 @@ cdef class TestObj(ObjFunc):
         return tuple(v), self.target(v)
 
 
-cdef double[:] _with_mp(double[:, :] x,  double[:] beta, double theta):
+cdef double[:] _test(double[:, :] x,  double[:] beta, double theta,
+                        bint parallel):
     cdef double[:] y = zeros(x.shape[0])
-    cdef unsigned i, j, d
     cdef double r = 0
-    for i in prange(x.shape[0], nogil=True):
-        for j in range(x.shape[0]):
-            r = 0
-            for d in range(x.shape[1]):
-                r += (x[j, d] - x[i, d]) ** 2
-            r = r ** 0.5
-            y[i] += beta[j] * exp(-(r * theta) ** 2)
-    return y
-
-
-cdef double[:] _without_mp(double[:, :] x,  double[:] beta, double theta):
-    cdef double[:] y = zeros(x.shape[0])
     cdef unsigned i, j, d
-    cdef double r = 0
-    for i in range(x.shape[0]):
-        for j in range(x.shape[0]):
-            r = 0
-            for d in range(x.shape[1]):
-                r += (x[j, d] - x[i, d]) ** 2
-            r = r ** 0.5
-            y[i] += beta[j] * exp(-(r * theta) ** 2)
+    if parallel:
+        for i in prange(x.shape[0], nogil=True):
+            for j in range(x.shape[0]):
+                r = 0
+                for d in range(x.shape[1]):
+                    r += (x[j, d] - x[i, d]) ** 2
+                r = r ** 0.5
+                y[i] += beta[j] * exp(-(r * theta) ** 2)
+    else:
+        for i in range(x.shape[0]):
+            for j in range(x.shape[0]):
+                r = 0
+                for d in range(x.shape[1]):
+                    r += (x[j, d] - x[i, d]) ** 2
+                r = r ** 0.5
+                y[i] += beta[j] * exp(-(r * theta) ** 2)
     return y
 
 
 def with_mp():
-    _with_mp(array([random.rand(1000) for d in range(5)]).T,
-             random.rand(1000), 10)
+    _test(array([random.rand(1000) for d in range(5)]).T,
+          random.rand(1000), 10, True)
 
 
 def without_mp():
-    _without_mp(array([random.rand(1000) for d in range(5)]).T,
-                random.rand(1000), 10)
+    _test(array([random.rand(1000) for d in range(5)]).T,
+          random.rand(1000), 10, False)

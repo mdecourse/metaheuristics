@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # cython: language_level=3, cdivision=True, boundscheck=False, wraparound=False
-# cython: initializedcheck=False
+# cython: initializedcheck=False, nonecheck=False
 
 """Real-coded Genetic Algorithm
 
@@ -28,8 +28,8 @@ cdef class Genetic(Algorithm):
 
     def __cinit__(
         self,
-        ObjFunc func,
-        dict settings,
+        ObjFunc func not None,
+        dict settings not None,
         object progress_fun=None,
         object interrupt_fun=None
     ):
@@ -74,7 +74,7 @@ cdef class Genetic(Algorithm):
                 for s in range(self.dim):
                     self.pool[i, s] = rand_v(self.func.lb[s], self.func.ub[s])
                 self.fitness[i] = self.func.fitness(self.pool[i, :])
-        self.set_best_force(0)
+        self.set_best(0)
 
     cdef inline void crossover(self) nogil:
         cdef uint i, s
@@ -132,7 +132,6 @@ cdef class Genetic(Algorithm):
                                                       - self.func.lb[s])
                 # Get fitness
                 self.fitness[i] = self.func.fitness(self.pool[i, :])
-                self.set_best(i)
         else:
             for i in range(self.pop_num):
                 if not rand_v() < self.mutate_f:
@@ -146,7 +145,7 @@ cdef class Genetic(Algorithm):
                                                       - self.func.lb[s])
                 # Get fitness
                 self.fitness[i] = self.func.fitness(self.pool[i, :])
-                self.set_best(i)
+        self.find_best()
 
     cdef inline void select(self) nogil:
         """roulette wheel selection"""

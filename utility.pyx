@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # cython: language_level=3, cdivision=True, boundscheck=False, wraparound=False
-# cython: initializedcheck=False
+# cython: initializedcheck=False, nonecheck=False
 
 """The callable class of the validation in algorithm.
 The 'utility' module should be loaded when using sub-class of base classes.
@@ -11,6 +11,7 @@ license: AGPL
 email: pyslvs@gmail.com
 """
 
+cimport cython
 from numpy import zeros, float64 as np_float
 from libc.stdlib cimport rand, srand, RAND_MAX
 from libc.time cimport time, difftime
@@ -116,27 +117,19 @@ cdef class Algorithm:
         self.pool[i, :] = v
 
     cdef void set_best(self, uint i) nogil:
-        """Set as best with comparison."""
-        omp_set_lock(&self.mutex)
-        if self.fitness[i] < self.best_f:
-            self.best_f = self.fitness[i]
-            self.best[:] = self.pool[i, :]
-        omp_unset_lock(&self.mutex)
-
-    cdef void set_best_force(self, uint i) nogil:
         """Set as best."""
-        omp_set_lock(&self.mutex)
         self.best_f = self.fitness[i]
         self.best[:] = self.pool[i, :]
-        omp_unset_lock(&self.mutex)
 
-    cdef void set_best_from(self, double f, double[:] v) nogil:
-        """Set best from tmp."""
-        omp_set_lock(&self.mutex)
-        if f < self.best_f:
-            self.best_f = f
-            self.best[:] = v
-        omp_unset_lock(&self.mutex)
+    cdef void find_best(self) nogil:
+        """Find the best."""
+        cdef uint best = 0
+        cdef uint i
+        for i in range(0, self.pop_num):
+            if self.fitness[i] < self.fitness[best]:
+                best = i
+        if self.fitness[best] < self.best_f:
+            self.set_best(best)
 
     cdef void initialize(self) nogil:
         """Initialize function."""
