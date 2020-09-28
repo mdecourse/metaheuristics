@@ -38,7 +38,7 @@ cdef class TestObj(ObjFunc):
         return tuple(v), self.target(v)
 
 
-cdef double[:] _test(double[:, :] x,  double[:] beta, double theta,
+cdef double[:] _radial_basis(double[:, :] x,  double[:] beta, double theta,
                         bint parallel):
     cdef double[:] y = zeros(x.shape[0])
     cdef double r = 0
@@ -63,10 +63,10 @@ cdef double[:] _test(double[:, :] x,  double[:] beta, double theta,
 
 
 def with_mp():
-    _test(array([random.rand(1000) for d in range(5)]).T,
+    _radial_basis(array([random.rand(1000) for d in range(5)]).T,
           random.rand(1000), 10, True)
 
 
 def without_mp():
-    _test(array([random.rand(1000) for d in range(5)]).T,
+    _radial_basis(array([random.rand(1000) for d in range(5)]).T,
           random.rand(1000), 10, False)
