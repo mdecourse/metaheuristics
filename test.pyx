@@ -11,7 +11,9 @@ email: pyslvs@gmail.com
 """
 
 cimport cython
-from numpy import array, float64 as np_float
+from cython.parallel cimport prange
+from libc.math cimport exp
+from numpy import array, zeros, float64 as np_float, random
 from .utility cimport ObjFunc
 
 
@@ -34,3 +36,41 @@ cdef class TestObj(ObjFunc):
 
     cpdef object result(self, double[:] v):
         return tuple(v), self.target(v)
+
+
+cdef double[:] _with_mp(double[:, :] x,  double[:] beta, double theta):
+    cdef double[:] y = zeros(x.shape[0])
+    cdef unsigned i, j, d
+    cdef double r = 0
+    for i in prange(x.shape[0], nogil=True):
+        for j in range(x.shape[0]):
+            r = 0
+            for d in range(x.shape[1]):
+                r += (x[j, d] - x[i, d]) ** 2
+            r = r ** 0.5
+            y[i] += beta[j] * exp(-(r * theta) ** 2)
+    return y
+
+
+cdef double[:] _without_mp(double[:, :] x,  double[:] beta, double theta):
+    cdef double[:] y = zeros(x.shape[0])
+    cdef unsigned i, j, d
+    cdef double r = 0
+    for i in range(x.shape[0]):
+        for j in range(x.shape[0]):
+            r = 0
+            for d in range(x.shape[1]):
+                r += (x[j, d] - x[i, d]) ** 2
+            r = r ** 0.5
+            y[i] += beta[j] * exp(-(r * theta) ** 2)
+    return y
+
+
+def with_mp():
+    _with_mp(array([random.rand(1000) for d in range(5)]).T,
+             random.rand(1000), 10)
+
+
+def without_mp():
+    _without_mp(array([random.rand(1000) for d in range(5)]).T,
+                random.rand(1000), 10)

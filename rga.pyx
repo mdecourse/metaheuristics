@@ -64,10 +64,16 @@ cdef class Genetic(Algorithm):
 
     cdef inline void initialize(self) nogil:
         cdef uint i, s
-        for i in prange(self.pop_num, num_threads=4, nogil=True):
-            for s in range(self.dim):
-                self.pool[i, s] = rand_v(self.func.lb[s], self.func.ub[s])
-            self.fitness[i] = self.func.fitness(self.pool[i, :])
+        if self.parallel:
+            for i in prange(self.pop_num, nogil=True):
+                for s in range(self.dim):
+                    self.pool[i, s] = rand_v(self.func.lb[s], self.func.ub[s])
+                self.fitness[i] = self.func.fitness(self.pool[i, :])
+        else:
+            for i in range(self.pop_num):
+                for s in range(self.dim):
+                    self.pool[i, s] = rand_v(self.func.lb[s], self.func.ub[s])
+                self.fitness[i] = self.func.fitness(self.pool[i, :])
         self.set_best_force(0)
 
     cdef inline void crossover(self) nogil:
@@ -113,19 +119,34 @@ cdef class Genetic(Algorithm):
 
     cdef inline void mutate(self) nogil:
         cdef uint i, s
-        for i in prange(self.pop_num, num_threads=4, nogil=True):
-            if not rand_v() < self.mutate_f:
-                continue
-            s = rand_i(self.dim)
-            if rand_v() < 0.5:
-                self.pool[i, s] += self.get_delta(self.func.ub[s]
-                                                  - self.pool[i, s])
-            else:
-                self.pool[i, s] -= self.get_delta(self.pool[i, s]
-                                                  - self.func.lb[s])
-            # Get fitness
-            self.fitness[i] = self.func.fitness(self.pool[i, :])
-            self.set_best(i)
+        if self.parallel:
+            for i in prange(self.pop_num, nogil=True):
+                if not rand_v() < self.mutate_f:
+                    continue
+                s = rand_i(self.dim)
+                if rand_v() < 0.5:
+                    self.pool[i, s] += self.get_delta(self.func.ub[s]
+                                                      - self.pool[i, s])
+                else:
+                    self.pool[i, s] -= self.get_delta(self.pool[i, s]
+                                                      - self.func.lb[s])
+                # Get fitness
+                self.fitness[i] = self.func.fitness(self.pool[i, :])
+                self.set_best(i)
+        else:
+            for i in range(self.pop_num):
+                if not rand_v() < self.mutate_f:
+                    continue
+                s = rand_i(self.dim)
+                if rand_v() < 0.5:
+                    self.pool[i, s] += self.get_delta(self.func.ub[s]
+                                                      - self.pool[i, s])
+                else:
+                    self.pool[i, s] -= self.get_delta(self.pool[i, s]
+                                                      - self.func.lb[s])
+                # Get fitness
+                self.fitness[i] = self.func.fitness(self.pool[i, :])
+                self.set_best(i)
 
     cdef inline void select(self) nogil:
         """roulette wheel selection"""

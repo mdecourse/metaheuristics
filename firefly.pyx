@@ -67,17 +67,27 @@ cdef class Firefly(Algorithm):
 
     cdef inline void initialize(self) nogil:
         cdef uint i, s
-        for i in prange(self.pop_num, num_threads=4, nogil=True):
-            for s in range(self.dim):
-                self.pool[i, s] = rand_v(self.func.lb[s], self.func.ub[s])
+        if self.parallel:
+            for i in prange(self.pop_num, nogil=True):
+                for s in range(self.dim):
+                    self.pool[i, s] = rand_v(self.func.lb[s], self.func.ub[s])
+        else:
+            for i in range(self.pop_num):
+                for s in range(self.dim):
+                    self.pool[i, s] = rand_v(self.func.lb[s], self.func.ub[s])
         self.get_fitness()
         self.set_best_force(0)
 
     cdef inline void get_fitness(self) nogil:
         cdef uint i
-        for i in prange(self.pop_num, num_threads=4, nogil=True):
-            self.fitness[i] = self.func.fitness(self.pool[i, :])
-            self.set_best(i)
+        if self.parallel:
+            for i in prange(self.pop_num, nogil=True):
+                self.fitness[i] = self.func.fitness(self.pool[i, :])
+                self.set_best(i)
+        else:
+            for i in range(self.pop_num):
+                self.fitness[i] = self.func.fitness(self.pool[i, :])
+                self.set_best(i)
 
     cdef inline void move_fireflies(self) nogil:
         cdef bint is_move

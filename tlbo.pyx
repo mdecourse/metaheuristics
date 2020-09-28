@@ -44,11 +44,18 @@ cdef class TeachingLearning(Algorithm):
     cdef inline void initialize(self) nogil:
         """Initial population: Sorted students."""
         cdef uint i, j, s
-        for i in prange(self.pop_num, num_threads=4, nogil=True):
-            for s in range(self.dim):
-                self.pool[i, s] = rand_v(self.func.lb[s], self.func.ub[s])
-            self.fitness[i] = self.func.fitness(self.pool[i, :])
-            self.set_best(i)
+        if self.parallel:
+            for i in prange(self.pop_num, nogil=True):
+                for s in range(self.dim):
+                    self.pool[i, s] = rand_v(self.func.lb[s], self.func.ub[s])
+                self.fitness[i] = self.func.fitness(self.pool[i, :])
+                self.set_best(i)
+        else:
+            for i in range(self.pop_num):
+                for s in range(self.dim):
+                    self.pool[i, s] = rand_v(self.func.lb[s], self.func.ub[s])
+                self.fitness[i] = self.func.fitness(self.pool[i, :])
+                self.set_best(i)
 
     cdef inline void teaching(self, uint i) nogil:
         """Teaching phase. The last best is the teacher."""

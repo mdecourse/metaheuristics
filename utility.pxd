@@ -41,6 +41,7 @@ cdef class ObjFunc:
 
 
 cdef class Algorithm:
+    cdef bint parallel
     cdef uint pop_num, dim, stop_at_i, rpt
     cdef Task stop_at
     cdef double stop_at_f, best_f
