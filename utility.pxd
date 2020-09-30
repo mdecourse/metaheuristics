@@ -27,7 +27,7 @@ cdef packed struct Report:
     double time
 
 cdef double rand_v(double lower = *, double upper = *) nogil
-cdef uint rand_i(int upper) nogil
+cdef uint rand_i(uint upper) nogil
 
 
 cdef class ObjFunc:

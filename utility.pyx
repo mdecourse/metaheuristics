@@ -22,7 +22,7 @@ cdef inline double rand_v(double lower = 0., double upper = 1.) nogil:
     return lower + <double>rand() / RAND_MAX * (upper - lower)
 
 
-cdef inline uint rand_i(int upper) nogil:
+cdef inline uint rand_i(uint upper) nogil:
     """A random integer between 0 <= r < upper."""
     return rand() % upper
 
