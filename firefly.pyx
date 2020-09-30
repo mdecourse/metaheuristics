@@ -70,17 +70,6 @@ cdef class Firefly(Algorithm):
         self.initialize_pop()
         self.set_best(0)
 
-    cdef inline void get_fitness(self) nogil:
-        """Get fitness."""
-        cdef uint i
-        if self.parallel:
-            for i in prange(self.pop_num, nogil=True):
-                self.fitness[i] = self.func.fitness(self.pool[i, :])
-        else:
-            for i in range(self.pop_num):
-                self.fitness[i] = self.func.fitness(self.pool[i, :])
-        self.find_best()
-
     cdef inline void move_fireflies(self) nogil:
         """Move fireflies."""
         cdef bint is_move
@@ -122,4 +111,12 @@ cdef class Firefly(Algorithm):
 
     cdef inline void generation_process(self) nogil:
         self.move_fireflies()
-        self.get_fitness()
+        # Get fitness
+        cdef uint i
+        if self.parallel:
+            for i in prange(self.pop_num):
+                self.fitness[i] = self.func.fitness(self.pool[i, :])
+        else:
+            for i in range(self.pop_num):
+                self.fitness[i] = self.func.fitness(self.pool[i, :])
+        self.find_best()

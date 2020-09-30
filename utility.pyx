@@ -11,7 +11,7 @@ license: AGPL
 email: pyslvs@gmail.com
 """
 
-from numpy import zeros, float64 as np_float
+from numpy import zeros, float64 as f64
 from cython.parallel cimport prange
 from libc.stdlib cimport rand, srand, RAND_MAX
 from libc.time cimport time, difftime
@@ -50,8 +50,8 @@ cdef class Algorithm:
 
     def __cinit__(
         self,
-        ObjFunc func,
-        dict settings,
+        ObjFunc func not None,
+        dict settings not None,
         object progress_fun=None,
         object interrupt_fun=None
     ):
@@ -85,7 +85,7 @@ cdef class Algorithm:
         if self.dim != len(self.func.lb):
             raise ValueError("length of upper and lower bounds must be equal")
         self.best_f = 0
-        self.best = zeros(self.dim, dtype=np_float)
+        self.best = zeros(self.dim, dtype=f64)
         # setup benchmark
         self.func.gen = 0
         self.time_start = 0
@@ -93,12 +93,12 @@ cdef class Algorithm:
 
     cdef void new_pop(self):
         """New population."""
-        self.fitness = zeros(self.pop_num, dtype=np_float)
-        self.pool = zeros((self.pop_num, self.dim), dtype=np_float)
+        self.fitness = zeros(self.pop_num, dtype=f64)
+        self.pool = zeros((self.pop_num, self.dim), dtype=f64)
 
     cdef double[:] make_tmp(self):
         """Make new chromosome."""
-        return zeros(self.dim, dtype=np_float)
+        return zeros(self.dim, dtype=f64)
 
     cdef void assign(self, uint i, uint j) nogil:
         """Copy value from j to i."""
@@ -129,7 +129,7 @@ cdef class Algorithm:
         """Initialize population."""
         cdef uint i, s
         if self.parallel:
-            for i in prange(self.pop_num, nogil=True):
+            for i in prange(self.pop_num):
                 for s in range(self.dim):
                     self.pool[i, s] = rand_v(self.func.lb[s], self.func.ub[s])
                 self.fitness[i] = self.func.fitness(self.pool[i, :])

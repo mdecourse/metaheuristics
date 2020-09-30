@@ -13,7 +13,7 @@ email: pyslvs@gmail.com
 cimport cython
 from cython.parallel cimport prange
 from libc.math cimport exp
-from numpy import array, zeros, float64 as np_float, random
+from numpy import array, zeros, float64 as f64, random
 from .utility cimport ObjFunc
 
 
@@ -25,8 +25,8 @@ cdef class TestObj(ObjFunc):
     """
 
     def __cinit__(self):
-        self.ub = array([100, 100], dtype=np_float)
-        self.lb = array([0, 0], dtype=np_float)
+        self.ub = array([100, 100], dtype=f64)
+        self.lb = array([0, 0], dtype=f64)
 
     cdef double target(self, double[:] v) nogil:
         return v[0] * v[0] + 8 * v[1]
@@ -39,12 +39,14 @@ cdef class TestObj(ObjFunc):
 
 
 cdef double[:] _radial_basis(double[:, :] x,  double[:] beta, double theta,
-                        bint parallel):
-    cdef double[:] y = zeros(x.shape[0])
+                        bint parallel) nogil:
+    cdef double[:] y
+    with gil:
+        y = zeros(x.shape[0])
     cdef double r = 0
     cdef unsigned i, j, d
     if parallel:
-        for i in prange(x.shape[0], nogil=True):
+        for i in prange(x.shape[0]):
             for j in range(x.shape[0]):
                 r = 0
                 for d in range(x.shape[1]):

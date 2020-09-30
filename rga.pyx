@@ -11,9 +11,9 @@ email: pyslvs@gmail.com
 """
 
 cimport cython
-from cython.parallel cimport prange
+from cython.parallel cimport parallel
 from libc.math cimport pow
-from numpy import zeros, float64 as np_float
+from numpy import zeros, float64 as f64
 from .utility cimport MAX_GEN, rand_v, rand_i, ObjFunc, Algorithm
 
 ctypedef unsigned int uint
@@ -23,7 +23,7 @@ ctypedef unsigned int uint
 cdef class Genetic(Algorithm):
     """The implementation of Real-coded Genetic Algorithm."""
     cdef double cross, mutate_f, win, delta
-    cdef double[:] new_fitness, tmp, tmp2, tmp3
+    cdef double[:] new_fitness, tmp1, tmp2, tmp3, f_tmp
     cdef double[:, :] new_pool
 
     def __cinit__(
@@ -50,11 +50,12 @@ cdef class Genetic(Algorithm):
         self.win = settings.get('win', 0.95)
         self.delta = settings.get('delta', 5.)
         self.new_pop()
-        self.new_fitness = zeros(self.pop_num, dtype=np_float)
-        self.new_pool = zeros((self.pop_num, self.dim), dtype=np_float)
-        self.tmp = self.make_tmp()
+        self.new_fitness = zeros(self.pop_num, dtype=f64)
+        self.new_pool = zeros((self.pop_num, self.dim), dtype=f64)
+        self.tmp1 = self.make_tmp()
         self.tmp2 = self.make_tmp()
         self.tmp3 = self.make_tmp()
+        self.f_tmp = zeros(3, dtype=f64)
 
     cdef inline double check(self, int i, double v) nogil:
         """If a variable is out of bound, replace it with a random value."""
@@ -68,13 +69,12 @@ cdef class Genetic(Algorithm):
 
     cdef inline void crossover(self) nogil:
         cdef uint i, s
-        cdef double c1_f, c2_f, c3_f
         for i in range(0, self.pop_num - 1, 2):
             if not rand_v() < self.cross:
                 continue
             for s in range(self.dim):
                 # first baby, half father half mother
-                self.tmp[s] = 0.5 * self.pool[i, s] + 0.5 * self.pool[i + 1, s]
+                self.tmp1[s] = 0.5 * self.pool[i, s] + 0.5 * self.pool[i + 1, s]
                 # second baby, three quarters of father and quarter of mother
                 self.tmp2[s] = self.check(s, 1.5 * self.pool[i, s]
                                    - 0.5 * self.pool[i + 1, s])
@@ -82,22 +82,22 @@ cdef class Genetic(Algorithm):
                 self.tmp3[s] = self.check(s, -0.5 * self.pool[i, s]
                                    + 1.5 * self.pool[i + 1, s])
             # evaluate new baby
-            c1_f = self.func.fitness(self.tmp)
-            c2_f = self.func.fitness(self.tmp2)
-            c3_f = self.func.fitness(self.tmp3)
+            self.f_tmp[0] = self.func.fitness(self.tmp1)
+            self.f_tmp[1] = self.func.fitness(self.tmp2)
+            self.f_tmp[2] = self.func.fitness(self.tmp3)
             # bubble sort: smaller -> larger
-            if c1_f > c2_f:
-                c1_f, c2_f = c2_f, c1_f
-                self.tmp, self.tmp2 = self.tmp2, self.tmp
-            if c1_f > c3_f:
-                c1_f, c3_f = c3_f, c1_f
-                self.tmp, self.tmp3 = self.tmp3, self.tmp
-            if c2_f > c3_f:
-                c2_f, c3_f = c3_f, c2_f
+            if self.f_tmp[0] > self.f_tmp[1]:
+                self.f_tmp[0], self.f_tmp[1] = self.f_tmp[1], self.f_tmp[0]
+                self.tmp1, self.tmp2 = self.tmp2, self.tmp1
+            if self.f_tmp[0] > self.f_tmp[2]:
+                self.f_tmp[0], self.f_tmp[2] = self.f_tmp[2], self.f_tmp[0]
+                self.tmp1, self.tmp3 = self.tmp3, self.tmp1
+            if self.f_tmp[1] > self.f_tmp[2]:
+                self.f_tmp[1], self.f_tmp[2] = self.f_tmp[2], self.f_tmp[1]
                 self.tmp2, self.tmp3 = self.tmp3, self.tmp2
             # replace first two baby to parent, another one will be
-            self.assign_from(i, c1_f, self.tmp)
-            self.assign_from(i + 1, c2_f, self.tmp2)
+            self.assign_from(i, self.f_tmp[0], self.tmp1)
+            self.assign_from(i + 1, self.f_tmp[1], self.tmp2)
 
     cdef inline double get_delta(self, double y) nogil:
         cdef double r
@@ -109,31 +109,21 @@ cdef class Genetic(Algorithm):
 
     cdef inline void mutate(self) nogil:
         cdef uint i, s
-        if self.parallel:
-            for i in prange(self.pop_num, nogil=True):
-                if not rand_v() < self.mutate_f:
-                    continue
-                s = rand_i(self.dim)
-                if rand_v() < 0.5:
-                    self.pool[i, s] += self.get_delta(self.func.ub[s]
-                                                      - self.pool[i, s])
-                else:
-                    self.pool[i, s] -= self.get_delta(self.pool[i, s]
-                                                      - self.func.lb[s])
-                # Get fitness
-                self.fitness[i] = self.func.fitness(self.pool[i, :])
-        else:
-            for i in range(self.pop_num):
-                if not rand_v() < self.mutate_f:
-                    continue
-                s = rand_i(self.dim)
-                if rand_v() < 0.5:
-                    self.pool[i, s] += self.get_delta(self.func.ub[s]
-                                                      - self.pool[i, s])
-                else:
-                    self.pool[i, s] -= self.get_delta(self.pool[i, s]
-                                                      - self.func.lb[s])
-                # Get fitness
+        for i in range(self.pop_num):
+            if not rand_v() < self.mutate_f:
+                continue
+            s = rand_i(self.dim)
+            if rand_v() < 0.5:
+                self.pool[i, s] += self.get_delta(self.func.ub[s]
+                                                  - self.pool[i, s])
+            else:
+                self.pool[i, s] -= self.get_delta(self.pool[i, s]
+                                                  - self.func.lb[s])
+            # Get fitness
+            if self.parallel:
+                with parallel():
+                    self.fitness[i] = self.func.fitness(self.pool[i, :])
+            else:
                 self.fitness[i] = self.func.fitness(self.pool[i, :])
         self.find_best()
 
