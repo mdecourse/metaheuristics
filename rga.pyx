@@ -63,17 +63,7 @@ cdef class Genetic(Algorithm):
         return v
 
     cdef inline void initialize(self) nogil:
-        cdef uint i, s
-        if self.parallel:
-            for i in prange(self.pop_num, nogil=True):
-                for s in range(self.dim):
-                    self.pool[i, s] = rand_v(self.func.lb[s], self.func.ub[s])
-                self.fitness[i] = self.func.fitness(self.pool[i, :])
-        else:
-            for i in range(self.pop_num):
-                for s in range(self.dim):
-                    self.pool[i, s] = rand_v(self.func.lb[s], self.func.ub[s])
-                self.fitness[i] = self.func.fitness(self.pool[i, :])
+        self.initialize_pop()
         self.set_best(0)
 
     cdef inline void crossover(self) nogil:
