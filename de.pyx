@@ -11,9 +11,8 @@ email: pyslvs@gmail.com
 """
 
 cimport cython
-from .utility cimport rand_v, rand_i, ObjFunc, Algorithm
+from .utility cimport uint, rand_v, rand_i, ObjFunc, Algorithm
 
-ctypedef unsigned int uint
 ctypedef void (*Eq)(Differential, uint) nogil
 
 

@@ -12,9 +12,7 @@ email: pyslvs@gmail.com
 
 cimport cython
 from libc.math cimport round
-from .utility cimport rand_v, rand_i, ObjFunc, Algorithm
-
-ctypedef unsigned int uint
+from .utility cimport uint, rand_v, rand_i, ObjFunc, Algorithm
 
 
 @cython.final

@@ -14,9 +14,7 @@ cimport cython
 from cython.parallel cimport parallel
 from libc.math cimport pow
 from numpy import zeros, float64 as f64
-from .utility cimport MAX_GEN, rand_v, rand_i, ObjFunc, Algorithm
-
-ctypedef unsigned int uint
+from .utility cimport uint, MAX_GEN, rand_v, rand_i, ObjFunc, Algorithm
 
 
 @cython.final

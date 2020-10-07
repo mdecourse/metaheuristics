@@ -13,9 +13,7 @@ email: pyslvs@gmail.com
 cimport cython
 from cython.parallel cimport prange
 from libc.math cimport exp, sqrt
-from .utility cimport rand_v, ObjFunc, Algorithm
-
-ctypedef unsigned int uint
+from .utility cimport uint, rand_v, ObjFunc, Algorithm
 
 
 cdef double _distance(double[:] me, double[:] she, uint dim) nogil:

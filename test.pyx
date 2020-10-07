@@ -14,7 +14,7 @@ cimport cython
 from cython.parallel cimport prange
 from libc.math cimport exp
 from numpy import array, zeros, float64 as f64, random
-from .utility cimport ObjFunc
+from .utility cimport uint, ObjFunc
 
 
 @cython.final
@@ -44,7 +44,7 @@ cdef double[:] _radial_basis(double[:, :] x,  double[:] beta, double theta,
     with gil:
         y = zeros(x.shape[0])
     cdef double r = 0
-    cdef unsigned i, j, d
+    cdef uint i, j, d
     if parallel:
         for i in prange(x.shape[0]):
             for j in range(x.shape[0]):
