@@ -78,7 +78,7 @@ cdef class Algorithm:
         self.rpt = settings.get('report', 0)
         if self.rpt <= 0:
             self.rpt = 10
-        self.parallel = settings.get('parallel', True)
+        self.parallel = settings.get('parallel', False)
         self.progress_fun = progress_fun
         self.interrupt_fun = interrupt_fun
         self.dim = len(self.func.ub)
