@@ -13,6 +13,7 @@ email: pyslvs@gmail.com
 
 from numpy import zeros, float64 as f64
 from cython.parallel cimport prange
+from libc.math cimport HUGE_VAL
 from libc.stdlib cimport rand, srand, RAND_MAX
 from libc.time cimport time, difftime
 
@@ -84,7 +85,7 @@ cdef class Algorithm:
         self.dim = len(self.func.ub)
         if self.dim != len(self.func.lb):
             raise ValueError("length of upper and lower bounds must be equal")
-        self.best_f = 0
+        self.best_f = HUGE_VAL
         self.best = zeros(self.dim, dtype=f64)
         # setup benchmark
         self.func.gen = 0
