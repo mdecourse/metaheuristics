@@ -5,7 +5,7 @@
 """Teaching Learning Based Optimization
 
 author: Yuan Chang
-copyright: Copyright (C) 2016-2020
+copyright: Copyright (C) 2016-2021
 license: AGPL
 email: pyslvs@gmail.com
 """
