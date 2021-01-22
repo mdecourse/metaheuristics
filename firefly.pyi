@@ -38,5 +38,4 @@ class Firefly(Algorithm):
 
         Others arguments are same as [`Differential.__init__()`](#differential9595init__).
         """
-        super(Firefly, self).__init__(...)
         ...

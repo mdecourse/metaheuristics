@@ -38,5 +38,4 @@ class Genetic(Algorithm):
 
         Others arguments are same as [`Differential.__init__()`](#differential9595init__).
         """
-        super(Genetic, self).__init__(...)
         ...
