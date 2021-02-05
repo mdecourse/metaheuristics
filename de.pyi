@@ -43,5 +43,4 @@ class Differential(Algorithm):
         The argument `progress_fun` will be called when update progress,
         and the argument `interrupt_fun` will check the interrupt status from GUI or subprocess.
         """
-        super(Differential, self).__init__(...)
         ...

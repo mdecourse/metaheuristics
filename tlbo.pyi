@@ -26,5 +26,4 @@ class TeachingLearning(Algorithm):
 
         Others arguments are same as [`Differential.__init__()`](#differential9595init__).
         """
-        super(TeachingLearning, self).__init__(...)
         ...
