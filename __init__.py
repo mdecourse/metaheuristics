@@ -7,9 +7,12 @@ __copyright__ = "Copyright (C) 2016-2021"
 __license__ = "AGPL"
 __email__ = "pyslvs@gmail.com"
 
-from typing import Mapping, Union, Type
+from typing import Mapping, Dict, Union, Type
 from enum import unique, Enum
 from .utility import ObjFunc, Algorithm
+from .config_types import (
+    AlgorithmConfig, DEConfig, FAConfig, GAConfig, TOBLConfig,
+)
 from .rga import Genetic
 from .firefly import Firefly
 from .de import Differential
@@ -25,13 +28,14 @@ class AlgorithmType(str, Enum):
     TLBO = "Teaching Learning Based Optimization"
 
 
-ALGORITHM: Mapping[AlgorithmType, Type[Algorithm]] = {
+_ALGORITHM: Mapping[AlgorithmType, Type[Algorithm]] = {
     AlgorithmType.RGA: Genetic,
     AlgorithmType.Firefly: Firefly,
     AlgorithmType.DE: Differential,
     AlgorithmType.TLBO: TeachingLearning,
 }
-PARAMS: Mapping[AlgorithmType, Mapping[str, Union[int, float]]] = {
+_DEFAULT_PARAMS = {'max_gen': 1000, 'report': 50}
+_PARAMS: Mapping[AlgorithmType, Dict[str, Union[int, float]]] = {
     AlgorithmType.RGA: {
         'pop_num': 500,
         'cross': 0.95,
@@ -54,6 +58,17 @@ PARAMS: Mapping[AlgorithmType, Mapping[str, Union[int, float]]] = {
     },
     AlgorithmType.TLBO: {
         'class_size': 50,
-    }
+    },
 }
-DEFAULT_PARAMS: Mapping[str, int] = {'max_gen': 1000, 'report': 50}
+
+
+def algorithm(opt: AlgorithmType) -> Type[Algorithm]:
+    """Return the class of the algorithms."""
+    return _ALGORITHM[opt]
+
+
+def default(opt: AlgorithmType) -> Dict[str, Union[int, float]]:
+    """Return the default settings of the algorithms."""
+    config = _PARAMS[opt].copy()
+    config.update(_DEFAULT_PARAMS.copy())
+    return config

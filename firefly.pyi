@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
 
-from typing import Dict, Callable, Optional, Any
+from typing import Callable, Optional
 from .utility import Algorithm, ObjFunc, FVal
+from .config_types import FAConfig
 
 class Firefly(Algorithm):
 
     def __init__(
         self,
         func: ObjFunc[FVal],
-        settings: Dict[str, Any],
+        settings: FAConfig,
         progress_fun: Optional[Callable[[int, str], None]] = None,
         interrupt_fun: Optional[Callable[[], bool]] = None
     ):

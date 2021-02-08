@@ -1,32 +1,33 @@
 # -*- coding: utf-8 -*-
 
-from typing import Dict, Callable, Optional, Any
+from typing import Callable, Optional
 from .utility import Algorithm, ObjFunc, FVal
+from .config_types import GAConfig
 
 class Genetic(Algorithm):
 
     def __init__(
         self,
         func: ObjFunc[FVal],
-        settings: Dict[str, Any],
+        settings: GAConfig,
         progress_fun: Optional[Callable[[int, str], None]] = None,
         interrupt_fun: Optional[Callable[[], bool]] = None
     ):
         """The format of argument `settings`:
 
-        + `nPop`: Population
+        + `pop_num`: Population
             + type: int
             + default: 500
-        + `pCross`: Crossover rate
+        + `cross`: Crossover rate
             + type: float (0.~1.)
             + default: 0.95
-        + `pMute`: Mutation rate
+        + `mutate`: Mutation rate
             + type: float (0.~1.)
             + default: 0.05
-        + `pWin`: Win rate
+        + `win`: Win rate
             + type: float (0.~1.)
             + default: 0.95
-        + `bDelta`: Delta value
+        + `delta`: Delta value
             + type: float
             + default: 5.
         + `max_gen` or `min_fit` or `max_time`: Limitation of termination
