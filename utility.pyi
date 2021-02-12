@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
 from abc import abstractmethod
-from typing import TypeVar, Tuple, Sequence, Dict, Callable, Optional, Generic, Any
+from typing import TypeVar, Tuple, Sequence, Callable, Optional, Generic
 from numpy import ndarray, double
+from .config_types import AlgorithmConfig
 
 FVal = TypeVar('FVal')
-
 
 class ObjFunc(Generic[FVal]):
 
@@ -20,9 +20,7 @@ class ObjFunc(Generic[FVal]):
     def result(self, v: ndarray) -> FVal:
         ...
 
-
 class Algorithm(Generic[FVal]):
-
     func: ObjFunc[FVal]
 
     def __class_getitem__(cls, item):
@@ -33,7 +31,7 @@ class Algorithm(Generic[FVal]):
     def __init__(
         self,
         func: ObjFunc[FVal],
-        settings: Dict[str, Any],
+        settings: AlgorithmConfig,
         progress_fun: Optional[Callable[[int, str], None]] = None,
         interrupt_fun: Optional[Callable[[], bool]] = None
     ):
@@ -43,7 +41,8 @@ class Algorithm(Generic[FVal]):
         The format of argument `settings` can be customized.
 
         The argument `progress_fun` will be called when update progress,
-        and the argument `interrupt_fun` will check the interrupt status from GUI or subprocess.
+        and the argument `interrupt_fun` will check the interrupt status from
+        GUI or subprocess.
         """
         ...
 
